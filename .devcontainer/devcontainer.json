@@ -1,0 +1,14 @@
+{
+  "name": "GAC-Mapping",
+  "dockerComposeFile": "compose.yaml",
+  "service": "gacm",
+  "containerEnv": {
+     "DISPLAY": "${localEnv:DISPLAY}"
+  },
+  "mounts": [
+    { "source": "${localWorkspaceFolder}", "target": "/workspaces/src/${localWorkspaceFolderBasename}", "type": "bind" }
+  ],
+  "capAdd": ["SYS_PTRACE"],
+  "securityOpt": ["seccomp=unconfined"],
+  "workspaceFolder": "/workspaces"
+}

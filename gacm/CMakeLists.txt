@@ -14,7 +14,7 @@ MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g  -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g -Wall -O3")
 
-find_package(PCL 1.8 REQUIRED)
+find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -40,14 +40,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 
-find_package(OpenCV 3.0 QUIET)
-if (NOT OpenCV_FOUND)
-    find_package(OpenCV 2.4.3 QUIET)
-    if (NOT OpenCV_FOUND)
-        message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
-    endif ()
-endif ()
-
+find_package(OpenCV QUIET)
 # find_package(Sophus REQUIRED)
 # find_package(Eigen3 REQUIRED)
 

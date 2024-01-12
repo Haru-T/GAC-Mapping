@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  core:
+    image: docker.io/library/ros:noetic-ros-core
+    command: ["roscore"]
+    expose:
+      - 11311
+    environment:
+      ROS_HOSTNAME: core
+    restart: always
+  gacm:
+    build:
+      context: .
+      dockerfile: GAC-Mapping.Containerfile
+    command: ["sleep", "infinity"]
+    environment:
+      DISPLAY:
+      ROS_HOSTNAME: gacm
+      ROS_MASTER_URI: "http://core:11311"
+    depends_on:
+      - core
+    volumes:
+      - type: bind
+        source: /tmp/.X11-unix
+        target: /tmp/.X11-unix
+      - type: bind
+        source: ${DATASET_DIR:?DATASET_DIR is not set}
+        target: /workspaces/dataset
+        read_only: true
+      - type: bind
+        source: ${ARTIFACTS_DIR:?ARTIFACTS_DIR is not set}
+        target: /workspaces/artifacts
+    working_dir: /workspaces
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: ["compute", "graphics", "utility", "display"]
+  bridge:
+    image: docker.io/library/ros:foxy-ros1-bridge
+    command: ["ros2", "run", "ros1_bridge", "dynamic_bridge"]
+    environment:
+      ROS_HOSTNAME: bridge
+      ROS_MASTER_URI: "http://core:11311"
+    depends_on:
+      - core
+    restart: always
+  ros2-bagplay:
+    build:
+      context: .
+      dockerfile: ros2-bagplay.Containerfile
+    command: ["sleep", "infinity"]
+    depends_on:
+      - bridge
+    volumes:
+      - type: bind
+        source: ${DATASET_DIR:?DATASET_DIR is not set}
+        target: /dataset
+        read_only: true
+    working_dir: /dataset
+
+volumes:
+  gacm-ws:
+  orb-slam3-ws:
