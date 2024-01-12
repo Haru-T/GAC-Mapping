@@ -1,0 +1,42 @@
+[project]
+name = "patchnetvlad"
+version = "0.1.6"
+description = "Patch-NetVLAD: An open-source Python implementation of the CVPR2021 paper"
+authors = [
+    { name = "Stephen Hausler, Sourav Garg, Ming Xu, Michael Milford and Tobias Fischer", email = "stephen.hausler@hdr.qut.edu.au" }
+]
+dependencies = [
+    "Pillow",
+    "matplotlib",
+    "natsort",
+    "numpy",
+    "opencv-python",
+    "scikit-learn",
+    "scipy",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "faiss-gpu>=1.7.1.post2",
+    "pyyaml>=6.0.1",
+    "rospy>=1.15.11",
+    "rospkg>=1.5.0",
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+classifiers = ["Private :: Do Not Upload"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[[tool.rye.sources]]
+name = "rospypi"
+url = "https://rospypi.github.io/simple"
