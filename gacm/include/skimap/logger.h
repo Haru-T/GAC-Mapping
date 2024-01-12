@@ -1,4 +1,3 @@
-
 #ifndef  __INCLUDE_HD_RECON_LOGGER_H_
 #define  __INCLUDE_HD_RECON_LOGGER_H_
 
@@ -15,8 +14,8 @@
 #define HD_LOG_FATAL   4
 
 #ifdef OUT_RELEASE
-#define HD_LOG_LEVEL 5 
-#else 
+#define HD_LOG_LEVEL 5
+#else
 #define HD_LOG_LEVEL 0
 #endif
 
@@ -24,15 +23,17 @@
 
 #define HD_LOG(type, fmt, ...) do { \
     if (type >= HD_LOG_LEVEL) { \
-        __android_log_print(ANDROID_LOG_ERROR, "time_huyh", "[%s:%s:%s:%d ]" fmt, __DATE__, __TIME__, __FILE__, __LINE__, ##__VA_ARGS__); \
-    }  \
+      __android_log_print( \
+        ANDROID_LOG_ERROR, "time_huyh", "[%s:%s:%s:%d ]" fmt, __DATE__, __TIME__, \
+        __FILE__, __LINE__, ## __VA_ARGS__); \
+    } \
 } while(0)
 
 #else
 
 #define HD_LOG(type, fmt, ...) do { \
     if (type >= HD_LOG_LEVEL) { \
-        printf("[%s:%s:%s:%d]" fmt, __DATE__, __TIME__, __FILE__, __LINE__, ##__VA_ARGS__); \
+      printf("[%s:%s:%s:%d]" fmt, __DATE__, __TIME__, __FILE__, __LINE__, ## __VA_ARGS__); \
     } \
 } while(0)
 

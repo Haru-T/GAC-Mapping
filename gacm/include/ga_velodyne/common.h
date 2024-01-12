@@ -1,9 +1,9 @@
 // This is an advanced implementation of the algorithm described in the following paper:
 //   J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time.
-//     Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014. 
+//     Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014.
 
 // Modifier: Tong Qin               qintonguav@gmail.com
-// 	         Shaozu Cao 		    saozu.cao@connect.ust.hk
+//               Shaozu Cao                 saozu.cao@connect.ust.hk
 
 
 // Copyright 2013, Ji Zhang, Carnegie Mellon University
@@ -57,12 +57,13 @@ inline double deg2rad(double degrees)
 }
 
 
-void poseToEigen(const geometry_msgs::Pose& pose, Eigen::Quaterniond & q, Eigen::Vector3d &t) {
-	q.w() = pose.orientation.w;
-	q.x() = pose.orientation.x;
-	q.y() = pose.orientation.y;
-	q.z() = pose.orientation.z;
-	t.x() = pose.position.x;
-	t.y() = pose.position.y;
-	t.z() = pose.position.z;
+void poseToEigen(const geometry_msgs::Pose & pose, Eigen::Quaterniond & q, Eigen::Vector3d & t)
+{
+  q.w() = pose.orientation.w;
+  q.x() = pose.orientation.x;
+  q.y() = pose.orientation.y;
+  q.z() = pose.orientation.z;
+  t.x() = pose.position.x;
+  t.y() = pose.position.y;
+  t.z() = pose.position.z;
 }

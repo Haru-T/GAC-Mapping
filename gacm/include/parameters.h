@@ -1,8 +1,8 @@
 /**
 * This file is part of GAC-Mapping.
 *
-* Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen University 
-* 
+* Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen University
+*
 * For more information see <https://github.com/SYSU-RoboticsLab/GAC-Mapping>
 *
 * GAC-Mapping is free software: you can redistribute it and/or modify
@@ -11,7 +11,7 @@
 * (at your option) any later version.
 *
 * GAC-Mapping is distributed to support research and development of
-* Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY; 
+* Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 * PURPOSE. In no event will the authors be held liable for any damages
 * arising from the use of this software. See the GNU General Public
@@ -36,8 +36,8 @@
 
 #include <pcl/filters/voxel_grid.h>
 // for pcl::fromRosMsg
-#include <pcl_conversions/pcl_conversions.h> 
-#include <pcl/conversions.h>   
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/conversions.h>
 #include <pcl_ros/transforms.h>
 
 #include <dirent.h>
@@ -53,7 +53,7 @@ extern Eigen::Matrix4d T_LC;
 extern Eigen::Matrix4d T_CL;
 
 
-// image feature extractor parameters 
+// image feature extractor parameters
 extern int MAX_CNT_LSD;
 extern int NUM_OCTAVES_LSD;
 extern float SCALE_LSD;
@@ -119,8 +119,8 @@ extern bool DEBUG;
 // display frame selection
 extern bool display_frame_cam;
 
-void erase_comment(std::string& str);
+void erase_comment(std::string & str);
 void printCopyright();
-void readParameters(ros::NodeHandle &n);
+void readParameters(ros::NodeHandle & n);
 // 显示进度，和python里的tqdm效果差不多
 void status(int length, float percent); // 第一位是显示长度，第二位是进行的百分数，范围(0,1)

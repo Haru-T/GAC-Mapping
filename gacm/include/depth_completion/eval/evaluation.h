@@ -8,7 +8,8 @@
 
 using namespace std;
 
-std::vector<float> depthError (DepthImage &D_gt, DepthImage &D_ipol) {
+std::vector<float> depthError(DepthImage & D_gt, DepthImage & D_ipol)
+{
 
   // check file size
   if (D_gt.width() != D_ipol.width() || D_gt.height() != D_ipol.height()) {
@@ -17,7 +18,7 @@ std::vector<float> depthError (DepthImage &D_gt, DepthImage &D_ipol) {
   }
 
   // extract width and height
-  uint32_t width  = D_gt.width();
+  uint32_t width = D_gt.width();
   uint32_t height = D_gt.height();
 
   //init errors
@@ -44,13 +45,13 @@ std::vector<float> depthError (DepthImage &D_gt, DepthImage &D_ipol) {
     for (uint32_t v = 0; v < height; v++) {
       if (D_gt.isValid(u, v)) {
         const float depth_ipol_m = D_ipol.getDepth(u, v);
-        const float depth_gt_m   = D_gt.getDepth(u, v);
+        const float depth_gt_m = D_gt.getDepth(u, v);
 
         //error if gt is valid
         const float d_err = fabs(depth_gt_m - depth_ipol_m);
 
         const float d_err_squared = d_err * d_err;
-        const float d_err_inv = fabs( 1.0 / depth_gt_m - 1.0 / depth_ipol_m);
+        const float d_err_inv = fabs(1.0 / depth_gt_m - 1.0 / depth_ipol_m);
         const float d_err_inv_squared = d_err_inv * d_err_inv;
         const float d_err_log = fabs(log(depth_gt_m) - log(depth_ipol_m));
         const float d_err_log_squared = d_err_log * d_err_log;
@@ -70,9 +71,9 @@ std::vector<float> depthError (DepthImage &D_gt, DepthImage &D_ipol) {
         //log diff for scale invariant metric
         logSum += (log(depth_gt_m) - log(depth_ipol_m));
         //abs relative
-        errors[7] += d_err/depth_gt_m;
+        errors[7] += d_err / depth_gt_m;
         //squared relative
-        errors[8] += d_err_squared/(depth_gt_m*depth_gt_m);
+        errors[8] += d_err_squared / (depth_gt_m * depth_gt_m);
 
         //increase valid gt pixels
         num_pixels++;
@@ -102,7 +103,8 @@ std::vector<float> depthError (DepthImage &D_gt, DepthImage &D_ipol) {
   const float normalizedSquaredLog = errors[5] / (float)num_pixels;
   errors[5] = sqrt(normalizedSquaredLog);
   //calculate scale invariant metric
-  errors[6] = sqrt(normalizedSquaredLog - (logSum*logSum / ((float)num_pixels*(float)num_pixels)));
+  errors[6] = sqrt(
+    normalizedSquaredLog - (logSum * logSum / ((float)num_pixels * (float)num_pixels)));
   //normalize abs relative
   errors[7] /= (float)num_pixels;
   //normalize squared relative
@@ -115,51 +117,57 @@ std::vector<float> depthError (DepthImage &D_gt, DepthImage &D_ipol) {
   * \param entry direct struct to be compared
   *
   */
-int png_select(const dirent *entry)
+int png_select(const dirent * entry)
 {
-  const char* fileName = entry->d_name;
+  const char * fileName = entry->d_name;
 
   //check that this is not a directory
-  if ((strcmp(fileName, ".")== 0) || (strcmp(fileName, "..") == 0))
+  if ((strcmp(fileName, ".") == 0) || (strcmp(fileName, "..") == 0)) {
     return false;
+  }
 
   /* Check for png filename extensions */
-  const char* ptr = strrchr(fileName, '.');
-  if ((ptr != NULL) && (strcmp(ptr, ".png") == 0))
+  const char * ptr = strrchr(fileName, '.');
+  if ((ptr != NULL) && (strcmp(ptr, ".png") == 0)) {
     return true;
-  else
+  } else {
     return false;
+  }
 }
 
 /** \brief Method to evaluate depth maps.
   * \param prediction_dir The directory containing predicted depth maps.
   * \return success If true, writes a txt file containing all depth error metrics.
   */
-bool eval (string gt_img_dir, string prediction_dir, string statistic_file) {
+bool eval(string gt_img_dir, string prediction_dir, string statistic_file)
+{
   // make sure all directories have ending slashes
   gt_img_dir += "/";
   prediction_dir += "/";
 
   // for all evaluation files do
-  struct dirent **namelist_gt;
-  struct dirent **namelist_prediction;
+  struct dirent ** namelist_gt;
+  struct dirent ** namelist_prediction;
   int num_files_gt = scandir(gt_img_dir.c_str(), &namelist_gt, png_select, alphasort);
-  int num_files_prediction = scandir(prediction_dir.c_str(), &namelist_prediction, png_select, alphasort);
+  int num_files_prediction = scandir(
+    prediction_dir.c_str(), &namelist_prediction, png_select, alphasort);
 
-  if( num_files_gt != num_files_prediction ){
-    std::cout << "Number of groundtruth (" << num_files_gt << ") and prediction files (" << num_files_prediction << ") mismatch!" << std::endl;
+  if (num_files_gt != num_files_prediction) {
+    std::cout << "Number of groundtruth (" << num_files_gt << ") and prediction files (" <<
+      num_files_prediction << ") mismatch!" << std::endl;
     free(namelist_gt);
     free(namelist_prediction);
     return false;
   }
-    std::cout << "Found " << num_files_gt << " groundtruth and " << num_files_prediction << " prediction files!" << std::endl;
+  std::cout << "Found " << num_files_gt << " groundtruth and " << num_files_prediction <<
+    " prediction files!" << std::endl;
 
-  if( num_files_prediction < 0 ){
+  if (num_files_prediction < 0) {
     perror("scandir");
   }
 
   // std::vector for storing the errors
-  std::vector< std::vector<float> > errors_out;
+  std::vector<std::vector<float>> errors_out;
   // create output directories
   system(("mkdir " + prediction_dir + "/errors_out/").c_str());
   system(("mkdir " + prediction_dir + "/errors_img/").c_str());
@@ -167,12 +175,12 @@ bool eval (string gt_img_dir, string prediction_dir, string statistic_file) {
   system(("mkdir " + prediction_dir + "/depth_ipol/").c_str());
   system(("mkdir " + prediction_dir + "/image_0/").c_str());
 
-  for( int i = 0; i < num_files_prediction; ++i ){
+  for (int i = 0; i < num_files_prediction; ++i) {
     //Be aware: we use the same index here, the files have to be correctly sorted!!!!
     std::string fileName_gt = gt_img_dir + namelist_gt[i]->d_name;
     std::string fileName_prediction = prediction_dir + namelist_prediction[i]->d_name;
 
-    if( strcmp(fileName_gt.c_str(), ".") == 0 || strcmp(fileName_gt.c_str(), "..") == 0 ) continue;
+    if (strcmp(fileName_gt.c_str(), ".") == 0 || strcmp(fileName_gt.c_str(), "..") == 0) {continue;}
     std::string filePath = gt_img_dir + fileName_gt;
     //std::string fileName_gt = path.back();
 
@@ -189,7 +197,8 @@ bool eval (string gt_img_dir, string prediction_dir, string statistic_file) {
 
       // check file format
       if (!imageFormat(fileName_gt, png::color_type_gray, 16, D_gt.width(), D_gt.height())) {
-        std::cout << "ERROR: Input must be png, 1 channel, 16 bit, " << D_gt.width() << " x " << D_gt.height() << "px" << std::endl;
+        std::cout << "ERROR: Input must be png, 1 channel, 16 bit, " << D_gt.width() << " x " <<
+          D_gt.height() << "px" << std::endl;
         free(namelist_gt);
         free(namelist_prediction);
         return false;
@@ -206,7 +215,8 @@ bool eval (string gt_img_dir, string prediction_dir, string statistic_file) {
       // save detailed infos for first 20 images
       if (i < 20) {
         // save errors of error images to text file
-        FILE *errors_out_file = fopen((prediction_dir + "/errors_out/" + prefix + ".txt").c_str(), "w");
+        FILE * errors_out_file = fopen(
+          (prediction_dir + "/errors_out/" + prefix + ".txt").c_str(), "w");
         if (errors_out_file == NULL) {
           std::cout << "ERROR: Couldn't generate/store output statistics!" << std::endl;
           return false;
@@ -235,7 +245,7 @@ bool eval (string gt_img_dir, string prediction_dir, string statistic_file) {
         system(("cp " + img_src + " " + img_dst).c_str());
       }
 
-    // on error, exit
+      // on error, exit
     } catch (...) {
       std::cout << "ERROR: Couldn't read: " << prefix.c_str() << ".png" << std::endl;
       free(namelist_gt);
@@ -245,7 +255,7 @@ bool eval (string gt_img_dir, string prediction_dir, string statistic_file) {
   }
   // open stats file for writing
   string stats_out_file_name = prediction_dir + statistic_file;
-  FILE *stats_out_file = fopen(stats_out_file_name.c_str(), "w");
+  FILE * stats_out_file = fopen(stats_out_file_name.c_str(), "w");
 
   if (stats_out_file == NULL || errors_out.size() == 0) {
     std::cout << "ERROR: Couldn't generate/store output statistics!" << std::endl;
@@ -254,15 +264,15 @@ bool eval (string gt_img_dir, string prediction_dir, string statistic_file) {
     return false;
   }
 
-  const char *metrics[] = {"mae", 
-                           "rmse", 
-                           "inverse mae", 
-                           "inverse rmse", 
-                           "log mae", 
-                           "log rmse", 
-                           "scale invariant log", 
-                           "abs relative", 
-                           "squared relative"};
+  const char * metrics[] = {"mae",
+    "rmse",
+    "inverse mae",
+    "inverse rmse",
+    "log mae",
+    "log rmse",
+    "scale invariant log",
+    "abs relative",
+    "squared relative"};
   // write mean, min and max
   std::cout << "Done. Your evaluation results are:" << std::endl;
   for (int32_t i = 0; i < errors_out[0].size(); i++) {
