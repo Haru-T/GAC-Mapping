@@ -1,27 +1,39 @@
 /**
-* This file is part of GAC-Mapping.
-*
-* Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen University
-*
-* For more information see <https://github.com/SYSU-RoboticsLab/GAC-Mapping>
-*
-* GAC-Mapping is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the license, or
-* (at your option) any later version.
-*
-* GAC-Mapping is distributed to support research and development of
-* Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-* PURPOSE. In no event will the authors be held liable for any damages
-* arising from the use of this software. See the GNU General Public
-* License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with GAC-Mapping. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of GAC-Mapping.
+ *
+ * Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen
+ * University
+ *
+ * For more information see <https://github.com/SYSU-RoboticsLab/GAC-Mapping>
+ *
+ * GAC-Mapping is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the license, or
+ * (at your option) any later version.
+ *
+ * GAC-Mapping is distributed to support research and development of
+ * Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. In no event will the authors be held liable for any
+ * damages arising from the use of this software. See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with GAC-Mapping. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include "parameters.h"
+#include "gacm/parameters.h"
+
+#include <iomanip>
+#include <iostream>
+#include <string>
+
+#include <Eigen/Dense>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/core/persistence.hpp>
+
+#include "ros/ros.h"
 
 std::string CAM_NAME;
 // std::string CAM_NAME_MAP;
@@ -49,6 +61,8 @@ int MIN_DIST_CORNER;
 
 int WINDOW_SIZE;
 
+bool RUN_ODOMETRY;
+
 double F_THRESHOLD;
 
 // laser scan registrators parameters
@@ -65,6 +79,7 @@ float EDGE_THRESHOLD;
 float SURF_THRESHOLD;
 float NEAREST_FEATURE_DIST;
 float OCCLUDE_THRESHOLD;
+FrameType FRAME;
 
 // laser odom parameters
 float SCAN_PERIOD;
@@ -103,12 +118,13 @@ bool DEBUG;
 // display frame selection
 bool display_frame_cam;
 
-template<typename T>
-T readParam(ros::NodeHandle & n, std::string name)
+template<typename T> T readParam(ros::NodeHandle & n, std::string name)
 {
   T ans;
   if (n.getParam(name, ans)) {
-    if (DEBUG) {ROS_INFO_STREAM("Loaded " << name << ": " << ans);}
+    if (DEBUG) {
+      ROS_INFO_STREAM("Loaded " << name << ": " << ans);
+    }
   } else {
     ROS_ERROR_STREAM("Failed to load " << name << ": " << ans);
 
@@ -134,7 +150,9 @@ void readParameters(ros::NodeHandle & n)
     CONFIG_ID = 4;
   }
   config_file = CONFIG_PATHS[CONFIG_ID];
-  if (DEBUG) {ROS_INFO_STREAM("Get param from" << config_file);}
+  if (DEBUG) {
+    ROS_INFO_STREAM("Get param from" << config_file);
+  }
   // config_file = readParam<std::string>(n, "config_file");
   // std::string config_file_map;
   // config_file_map = readParam<std::string>(n, "config_file_map");
@@ -170,8 +188,12 @@ void readParameters(ros::NodeHandle & n)
   // eigen_R2 = Q.normalized();
   // RCL2 = eigen_R2;
   TCL = eigen_T;
-  if (DEBUG) {ROS_INFO_STREAM("Extrinsic_R : " << std::endl << RCL);}
-  if (DEBUG) {ROS_INFO_STREAM("Extrinsic_T : " << std::endl << TCL.transpose());}
+  if (DEBUG) {
+    ROS_INFO_STREAM("Extrinsic_R : " << std::endl << RCL);
+  }
+  if (DEBUG) {
+    ROS_INFO_STREAM("Extrinsic_T : " << std::endl << TCL.transpose());
+  }
   // if(DEBUG) ROS_INFO_STREAM("Extrinsic_R2 : " << std::endl << RCL2);
   if (CONFIG_ID == 0) {
     T_CL = Eigen::Matrix4d::Identity();
@@ -192,10 +214,19 @@ void readParameters(ros::NodeHandle & n)
 
   WINDOW_SIZE = fsSettings["sliding_window_size"];
 
+  std::string odometry_method = fsSettings["odometry_method"];
+  ROS_INFO_STREAM("ODOMETRY_METHOD " << odometry_method);
+  RUN_ODOMETRY = (odometry_method == "gacm");
+  ROS_INFO("RUN_ODOMETRY: %s", RUN_ODOMETRY ? "true" : "false");
+
   N_SCANS = fsSettings["laser_scan_number"];
-  if (DEBUG) {ROS_INFO_STREAM("NSCANS " << N_SCANS);}
+  if (DEBUG) {
+    ROS_INFO_STREAM("NSCANS " << N_SCANS);
+  }
   HORIZON_SCANS = fsSettings["horizon_scans"];
-  if (DEBUG) {ROS_INFO_STREAM("HORIZON_SCANS " << HORIZON_SCANS);}
+  if (DEBUG) {
+    ROS_INFO_STREAM("HORIZON_SCANS " << HORIZON_SCANS);
+  }
   MINIMUM_RANGE = fsSettings["minimum_range"];
   ANGLE_RES_X = fsSettings["angle_res_x"];
   ANGLE_RES_Y = fsSettings["angle_res_y"];
@@ -207,6 +238,13 @@ void readParameters(ros::NodeHandle & n)
   SURF_THRESHOLD = fsSettings["surf_threshold"];
   NEAREST_FEATURE_DIST = fsSettings["nearest_feature_search_dist"];
   OCCLUDE_THRESHOLD = fsSettings["occlude_threshold"];
+
+  std::string frame = fsSettings["frame"];
+  if (frame == "laser") {
+    FRAME = FrameType::LASER;
+  } else {
+    FRAME = FrameType::CAMERA;
+  }
 
   SCAN_PERIOD = fsSettings["scan_period"];
   DISTANCE_SQ_THRESHOLD = fsSettings["distance_sq_threshold"];
@@ -232,11 +270,12 @@ void readParameters(ros::NodeHandle & n)
   erase_comment(CACHE_PATH);
   fsSettings.release();
 
-
   if (opendir(OUT_ODOM_PATH.c_str()) == NULL) {
-    std::string default_dir = std::getenv("HOME") + std::string("/gacm_output/data/testSavemap/");
+    std::string default_dir =
+      std::getenv("HOME") + std::string("/gacm_output/data/testSavemap/");
     ROS_WARN_STREAM(
-      "Odom Path: " + OUT_ODOM_PATH + " does not exist! Use default path: " + default_dir);
+      "Odom Path: " + OUT_ODOM_PATH +
+      " does not exist! Use default path: " + default_dir);
     OUT_ODOM_PATH = default_dir;
     if (opendir(OUT_ODOM_PATH.c_str()) == NULL) {
       system(("mkdir -p " + OUT_ODOM_PATH).c_str());
@@ -244,15 +283,16 @@ void readParameters(ros::NodeHandle & n)
   }
 
   if (opendir(CACHE_PATH.c_str()) == NULL) {
-    std::string default_dir = std::getenv("HOME") + std::string("/gacm_output/cache/");
+    std::string default_dir =
+      std::getenv("HOME") + std::string("/gacm_output/cache/");
     ROS_WARN_STREAM(
-      "Cache Path: " + CACHE_PATH + " does not exist! Use default path: " + default_dir);
+      "Cache Path: " + CACHE_PATH +
+      " does not exist! Use default path: " + default_dir);
     CACHE_PATH = default_dir;
     if (opendir(CACHE_PATH.c_str()) == NULL) {
       system(("mkdir -p " + CACHE_PATH).c_str());
     }
   }
-
 }
 
 void erase_comment(std::string & str)
@@ -267,7 +307,8 @@ void erase_comment(std::string & str)
   if (last_pos != str.size() - 1) {
     str.erase(last_pos + 1);
   } else if (last_pos == std::string::npos) {
-    std::cout << "\033[1;31mThe path format is invalid! path: " + str + "\n\033[0m";
+    std::cout << "\033[1;31mThe path format is invalid! path: " + str +
+      "\n\033[0m";
     exit(-1);
   }
 }
@@ -276,7 +317,7 @@ void erase_comment(std::string & str)
 void status(int length, float percent)
 {
   // std::cout << "\x1B[2k";     // Erase entire current line
-  std::cout << "\x1B[0E";       // Move to the beginning of the current line
+  std::cout << "\x1B[0E"; // Move to the beginning of the current line
   std::string progress = "Progress: [";
   for (int i = 0; i < length; ++i) {
     if (i < length * percent) {
@@ -285,14 +326,18 @@ void status(int length, float percent)
       progress += " ";
     }
   }
-  std::cout << progress + "] " << std::fixed << std::setprecision(2) << percent * 100.0f << "%";
+  std::cout << progress + "] " << std::fixed << std::setprecision(2)
+            << percent * 100.0f << "%";
   std::cout.flush();
 }
 
 void printCopyright()
 {
-  std::cout << "\n\033[1mGAC-Mapping  Copyright (C) Copyright (C) 2020-2022 JinHao He, Yilin Zhu\n"
-            << "This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.\n"
-            << "This is free software, and you are welcome to redistribute it\n"
-            << "under certain conditions; type `show c' for details.\033[0m\n\n";
+  std::cout
+    << "\n\033[1mGAC-Mapping  Copyright (C) Copyright (C) 2020-2022 JinHao "
+    "He, Yilin Zhu\n"
+    << "This program comes with ABSOLUTELY NO WARRANTY; for details type "
+    "`show w'.\n"
+    << "This is free software, and you are welcome to redistribute it\n"
+    << "under certain conditions; type `show c' for details.\033[0m\n\n";
 }

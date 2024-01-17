@@ -57,7 +57,9 @@ inline double deg2rad(double degrees)
 }
 
 
-void poseToEigen(const geometry_msgs::Pose & pose, Eigen::Quaterniond & q, Eigen::Vector3d & t)
+inline void poseToEigen(
+  const geometry_msgs::Pose & pose, Eigen::Quaterniond & q,
+  Eigen::Vector3d & t)
 {
   q.w() = pose.orientation.w;
   q.x() = pose.orientation.x;

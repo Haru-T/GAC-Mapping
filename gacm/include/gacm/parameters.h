@@ -66,6 +66,8 @@ extern double F_THRESHOLD;
 
 extern int WINDOW_SIZE;
 
+extern bool RUN_ODOMETRY;
+
 extern int DOWN_SAMPLE_NEED;
 
 // laser scan registrator parameters
@@ -82,6 +84,9 @@ extern float EDGE_THRESHOLD;
 extern float SURF_THRESHOLD;
 extern float NEAREST_FEATURE_DIST;
 extern float OCCLUDE_THRESHOLD;
+
+enum class FrameType { LASER, CAMERA };
+extern FrameType FRAME;
 
 // odom parameters
 extern float SCAN_PERIOD;

@@ -308,7 +308,7 @@ public:
     }
     sensor_msgs::PointCloud2 point_cloud_map_out;
     pcl::toROSMsg(point_cloud_map, point_cloud_map_out);
-    point_cloud_map_out.header.frame_id = "/camera";
+    point_cloud_map_out.header.frame_id = "camera";
     point_cloud_map_publisher_.publish(point_cloud_map_out);
     /// output as ply file
 //        pcl::PCLPointCloud2 point_cloud_out;

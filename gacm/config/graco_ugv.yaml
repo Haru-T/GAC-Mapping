@@ -49,6 +49,8 @@ min_keypoint_dist: 40
 F_threshold: 1.0
 sliding_window_size: 5
 
+odometry_method: gacm
+
 #laser registrator parameters
 laser_scan_number: 16
 horizon_scans: 1800  # 1875
@@ -64,6 +66,8 @@ surf_threshold: 0.2  # for ugv, if you want to get more accurate poses, this cou
 nearest_feature_search_dist: 25
 occlude_threshold: 0.3
 range_diff_threshold: 0.02
+
+frame: laser
 
 # point cloud removes distortion
 distortion: 0        # There are some problems in the implementation of the algorithm, it is best set 0
@@ -83,16 +87,13 @@ need_check_direction: 0 # On a drone, if your equipment (default is camera) Z ax
 
 # output odom para, tum format
 need_pub_odom: 1
-out_odom_path: /home/sysu-rapid/gacm_output/data/testSavemap/   # must end with "/"
+out_odom_path: /home/dev/gacm_output/data/testSavemap/   # must end with "/"
 
 # for memory save
-cache_path: /home/sysu-rapid/gacm_output/cache/     # must end with "/"
+cache_path: /home/dev/gacm_output/cache/     # must end with "/"
 
 # no use / deprecate
 gt_path: deprecate
 gt_start_time: 0
 out_gt_path: deprecate
 air_gps: 0
-
-
-

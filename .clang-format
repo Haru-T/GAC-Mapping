@@ -14,5 +14,14 @@ ColumnLimit: 100
 ConstructorInitializerIndentWidth: 0
 ContinuationIndentWidth: 2
 DerivePointerAlignment: false
+IncludeCategories:
+  - Regex: '^<Eigen/'
+    Priority: 3
+  - Regex: '^<pcl/'
+    Priority: 3
+  - Regex: '^<opencv2/'
+    Priority: 3
+  - Regex: '^"/'
+    Priority: 4
 PointerAlignment: Middle
 ReflowComments: false

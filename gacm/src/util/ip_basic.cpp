@@ -1,53 +1,27 @@
-/**
-* This file is part of GAC-Mapping.
-*
-* Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen University
-*
-* For more information see <https://github.com/SYSU-RoboticsLab/GAC-Mapping>
-*
-* GAC-Mapping is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the license, or
-* (at your option) any later version.
-*
-* GAC-Mapping is distributed to support research and development of
-* Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-* PURPOSE. In no event will the authors be held liable for any damages
-* arising from the use of this software. See the GNU General Public
-* License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with GAC-Mapping. If not, see <http://www.gnu.org/licenses/>.
-*/
+#include "gacm/util/ip_basic.h"
 
-#ifndef IP_BASIC_H
-#define IP_BASIC_H
+#include <vector>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
-#include <cmath>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/core/types.hpp>
+#include <opencv2/core/hal/interface.h>
 
-
-#include "iputil.h"
-
-
-// Full kernels
-cv::Mat FULL_KERNEL_3 = cv::Mat::ones(3, 3, CV_8U);
-cv::Mat FULL_KERNEL_5 = cv::Mat::ones(5, 5, CV_8U);
-cv::Mat FULL_KERNEL_7 = cv::Mat::ones(7, 7, CV_8U);
-cv::Mat FULL_KERNEL_9 = cv::Mat::ones(9, 9, CV_8U);
-cv::Mat FULL_KERNEL_31 = cv::Mat::ones(31, 31, CV_8U);
-
+namespace {
+const cv::Mat FULL_KERNEL_3 = cv::Mat::ones(3, 3, CV_8U);
+const cv::Mat FULL_KERNEL_5 = cv::Mat::ones(5, 5, CV_8U);
+const cv::Mat FULL_KERNEL_7 = cv::Mat::ones(7, 7, CV_8U);
+const cv::Mat FULL_KERNEL_9 = cv::Mat::ones(9, 9, CV_8U);
+const cv::Mat FULL_KERNEL_31 = cv::Mat::ones(31, 31, CV_8U);
 
 // 3*3 cross kernel
-cv::Mat CROSS_KERNEL_3 = (cv::Mat_<uchar>(3, 3) << 0, 1, 0,
+const cv::Mat CROSS_KERNEL_3 = (cv::Mat_<uchar>(3, 3) << 0, 1, 0,
   1, 1, 1,
   0, 1, 0);
 
 // 5*5 cross kernel
-cv::Mat CROSS_KERNEL_5 = (cv::Mat_<uchar>(5, 5) << 0, 0, 1, 0, 0,
+const cv::Mat CROSS_KERNEL_5 = (cv::Mat_<uchar>(5, 5) << 0, 0, 1, 0, 0,
   0, 0, 1, 0, 0,
   1, 1, 1, 1, 1,
   0, 0, 1, 0, 0,
@@ -55,7 +29,7 @@ cv::Mat CROSS_KERNEL_5 = (cv::Mat_<uchar>(5, 5) << 0, 0, 1, 0, 0,
 
 
 // 7*7 cross kernel
-cv::Mat CROSS_KERNEL_7 = (cv::Mat_<uchar>(7, 7) << 0, 0, 0, 1, 0, 0, 0,
+const cv::Mat CROSS_KERNEL_7 = (cv::Mat_<uchar>(7, 7) << 0, 0, 0, 1, 0, 0, 0,
   0, 0, 0, 1, 0, 0, 0,
   0, 0, 0, 1, 0, 0, 0,
   1, 1, 1, 1, 1, 1, 1,
@@ -63,13 +37,13 @@ cv::Mat CROSS_KERNEL_7 = (cv::Mat_<uchar>(7, 7) << 0, 0, 0, 1, 0, 0, 0,
   0, 0, 0, 1, 0, 0, 0,
   0, 0, 0, 1, 0, 0, 0);
 
-cv::Mat TALL_KERNEL_5 = (cv::Mat_<uchar>(5, 5) << 0, 0, 1, 0, 0,
+const cv::Mat TALL_KERNEL_5 = (cv::Mat_<uchar>(5, 5) << 0, 0, 1, 0, 0,
   0, 1, 1, 1, 0,
   0, 1, 1, 1, 0,
   0, 1, 1, 1, 0,
   0, 0, 1, 0, 0);
 
-cv::Mat TALL_KERNEL_7 = (cv::Mat_<uchar>(7, 7) << 0, 0, 0, 1, 0, 0, 0,
+const cv::Mat TALL_KERNEL_7 = (cv::Mat_<uchar>(7, 7) << 0, 0, 0, 1, 0, 0, 0,
   0, 0, 1, 1, 1, 0, 0,
   0, 0, 1, 1, 1, 0, 0,
   0, 0, 1, 1, 1, 0, 0,
@@ -79,23 +53,21 @@ cv::Mat TALL_KERNEL_7 = (cv::Mat_<uchar>(7, 7) << 0, 0, 0, 1, 0, 0, 0,
 
 
 // 5*5 diamond kernel
-cv::Mat DIAMOND_KERNEL_5 = (cv::Mat_<uchar>(5, 5) << 0, 0, 1, 0, 0,
+const cv::Mat DIAMOND_KERNEL_5 = (cv::Mat_<uchar>(5, 5) << 0, 0, 1, 0, 0,
   0, 1, 1, 1, 0,
   1, 1, 1, 1, 1,
   0, 1, 1, 1, 0,
   0, 0, 1, 0, 0);
 
 // 7*7 diamond kernel
-cv::Mat DIAMOND_KERNEL_7 = (cv::Mat_<uchar>(7, 7) << 0, 0, 0, 1, 0, 0, 0,
+const cv::Mat DIAMOND_KERNEL_7 = (cv::Mat_<uchar>(7, 7) << 0, 0, 0, 1, 0, 0, 0,
   0, 0, 1, 1, 1, 0, 0,
   0, 1, 1, 1, 1, 1, 0,
   1, 1, 1, 1, 1, 1, 1,
   0, 1, 1, 1, 1, 1, 0,
   0, 0, 1, 1, 1, 0, 0,
   0, 0, 0, 1, 0, 0, 0);
-
-const int KERNEL_TYPE_CROSS = 1;
-const int KERNEL_TYPE_DIAMOND = 2;
+}
 
 void getInvertDepth(cv::Mat src, cv::Mat & dst, const cv::Mat & mask)
 {
@@ -182,7 +154,6 @@ void generateInvalidMask(cv::Mat src, cv::Mat & invalid)
   }
 }
 
-
 void extendTop(cv::Mat src, cv::Mat & dst)
 {
   int type = src.type();
@@ -218,7 +189,7 @@ void extendTop(cv::Mat src, cv::Mat & dst)
   src.convertTo(dst, type);
 }
 
-void customDilate(cv::Mat src, cv::Mat & dst, const int & kernel_size, const int & kernel_type)
+void customDilate(cv::Mat src, cv::Mat & dst, int kernel_size, KernelType kernel_type)
 {
   int type = src.type();
   if (type != CV_64F) {
@@ -315,7 +286,4 @@ void customDilate(cv::Mat src, cv::Mat & dst, const int & kernel_size, const int
   getInvertDepth(src, dst, mask);
   dst = dst * 1000.0;
   dst.convertTo(dst, type);
-
 }
-
-# endif

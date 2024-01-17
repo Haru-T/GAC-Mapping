@@ -1,40 +1,41 @@
 /**
-* This file is part of GAC-Mapping.
-*
-* Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen University
-*
-* For more information see <https://github.com/SYSU-RoboticsLab/GAC-Mapping>
-*
-* GAC-Mapping is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the license, or
-* (at your option) any later version.
-*
-* GAC-Mapping is distributed to support research and development of
-* Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-* PURPOSE. In no event will the authors be held liable for any damages
-* arising from the use of this software. See the GNU General Public
-* License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with GAC-Mapping. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of GAC-Mapping.
+ *
+ * Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen
+ * University
+ *
+ * For more information see <https://github.com/SYSU-RoboticsLab/GAC-Mapping>
+ *
+ * GAC-Mapping is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the license, or
+ * (at your option) any later version.
+ *
+ * GAC-Mapping is distributed to support research and development of
+ * Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. In no event will the authors be held liable for any
+ * damages arising from the use of this software. See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with GAC-Mapping. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <memory>
 
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <visualization_msgs/Marker.h>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <message_filters/synchronizer.h>
-#include <message_filters/subscriber.h>
-#include <std_msgs/Empty.h>
+#include "geometry_msgs/PoseStamped.h"
+#include "message_filters/subscriber.h"
+#include "message_filters/sync_policies/approximate_time.h"
+#include "message_filters/synchronizer.h"
+#include "nav_msgs/Odometry.h"
+#include "nav_msgs/Path.h"
+#include "ros/ros.h"
+#include "sensor_msgs/Image.h"
+#include "sensor_msgs/PointCloud2.h"
+#include "std_msgs/Empty.h"
 
-
-#include "poseEstimator.h"
-
+#include "gacm/poseEstimator.h"
 
 std::shared_ptr<PoseEstimator> pose_estimator;
 
@@ -52,60 +53,70 @@ ros::Publisher pubMappingPose;
 
 ros::Publisher pubDepthImageRGB;
 
-
 ros::NodeHandle * nhp_ptr;
 
 int frame_count = 0;
 
 void featureCallback(
   const sensor_msgs::Image::ConstPtr & image_msg,
-  const sensor_msgs::PointCloud2ConstPtr & feature_points,                                                 /*  const sensor_msgs::PointCloud2ConstPtr &feature_lines,*/
+  const sensor_msgs::PointCloud2ConstPtr
+  & feature_points,      /*  const sensor_msgs::PointCloud2ConstPtr
+                            &feature_lines,*/
   const sensor_msgs::PointCloud2ConstPtr & feature_sharp,
   const sensor_msgs::PointCloud2ConstPtr & feature_less_sharp,
   const sensor_msgs::PointCloud2ConstPtr & feature_flat,
   const sensor_msgs::PointCloud2ConstPtr & feature_less_flat,
-  const sensor_msgs::PointCloud2ConstPtr & laser_full)
-{
-
-
-}
+  const sensor_msgs::PointCloud2ConstPtr & laser_full) {}
 
 void imageHandler(const sensor_msgs::ImageConstPtr & image_msg)
 {
   pose_estimator->imageHandler(image_msg);
 }
 
-void featurePointsHandler(const sensor_msgs::PointCloud2ConstPtr & feature_points_msg)
+void featurePointsHandler(
+  const sensor_msgs::PointCloud2ConstPtr & feature_points_msg)
 {
   pose_estimator->featurePointsHandler(feature_points_msg);
 }
 
-
-void laserCloudSharpHandler(const sensor_msgs::PointCloud2ConstPtr & corner_points_sharp)
+void laserCloudSharpHandler(
+  const sensor_msgs::PointCloud2ConstPtr & corner_points_sharp)
 {
   pose_estimator->laserCloudSharpHandler(corner_points_sharp);
   // ROS_INFO_STREAM("Receive sharp ");
 }
 
-void laserCloudLessSharpHandler(const sensor_msgs::PointCloud2ConstPtr & corner_points_less_sharp)
+void laserCloudLessSharpHandler(
+  const sensor_msgs::PointCloud2ConstPtr & corner_points_less_sharp)
 {
   pose_estimator->laserCloudLessSharpHandler(corner_points_less_sharp);
 }
 
-void laserCloudFlatHandler(const sensor_msgs::PointCloud2ConstPtr & surf_points_flat)
+void laserCloudFlatHandler(
+  const sensor_msgs::PointCloud2ConstPtr & surf_points_flat)
 {
   pose_estimator->laserCloudFlatHandler(surf_points_flat);
 }
 
-void laserCloudLessFlatHandler(const sensor_msgs::PointCloud2ConstPtr & surf_points_less_flat)
+void laserCloudLessFlatHandler(
+  const sensor_msgs::PointCloud2ConstPtr & surf_points_less_flat)
 {
   pose_estimator->laserCloudLessFlatHandler(surf_points_less_flat);
 }
 
-//receive all point cloud
-void laserCloudFullResHandler(const sensor_msgs::PointCloud2ConstPtr & laser_cloud_fullres)
+// receive all point cloud
+void laserCloudFullResHandler(
+  const sensor_msgs::PointCloud2ConstPtr & laser_cloud_fullres)
 {
   pose_estimator->laserCloudFullResHandler(laser_cloud_fullres);
+}
+
+void poseStampedHandler(
+  const geometry_msgs::PoseStampedConstPtr & pose_stamped)
+{
+  if (!RUN_ODOMETRY) {
+    pose_estimator->poseStampedHandler(pose_stamped);
+  }
 }
 
 void publishAll()
@@ -115,7 +126,8 @@ void publishAll()
   pubPointFeatures.publish(pose_estimator->getMapPointCloud());
 
   if (pose_estimator->cloudNeedPub() && pose_estimator->odomNeedPub()) {
-    pubLaserCloudCornerLast.publish(pose_estimator->getLaserCloudCornerLastMsg());
+    pubLaserCloudCornerLast.publish(
+      pose_estimator->getLaserCloudCornerLastMsg());
     pubLaserCloudSurfLast.publish(pose_estimator->getLaserCloudSurfLastMsg());
     pubLaserCloudFullRes.publish(pose_estimator->getLaserCloudFullResMsg());
     // ROS_ERROR_STREAM("Cloud Pub Finished####################");
@@ -137,10 +149,8 @@ void newSessionSignalHandler(const std_msgs::EmptyConstPtr & empty)
   pose_estimator = std::shared_ptr<PoseEstimator>(new PoseEstimator(CAM_NAME));
 }
 
-
 int main(int argc, char ** argv)
 {
-
   ros::init(argc, argv, "plOdometry");
   ros::NodeHandle nh_p("~");
   ros::NodeHandle nh;
@@ -151,20 +161,31 @@ int main(int argc, char ** argv)
 
   // Subscribers
 
-  message_filters::Subscriber<sensor_msgs::Image> sub_image(nh, "feature_image", 1);
-  message_filters::Subscriber<sensor_msgs::PointCloud2> sub_feature_points(nh, "feature_points", 1);
-  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_feature_lines(nh, "/feature_lines", 1);
+  message_filters::Subscriber<sensor_msgs::Image> sub_image(nh, "feature_image",
+    1);
+  message_filters::Subscriber<sensor_msgs::PointCloud2> sub_feature_points(
+    nh, "feature_points", 1);
+  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_feature_lines(nh,
+  // "/feature_lines", 1);
 
-  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_laser_sharp(nh, "/laser_cloud_sharp", 1);
-  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_laser_less_sharp(nh, "/laser_cloud_less_sharp", 1);
-  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_laser_flat(nh, "/laser_cloud_flat", 1);
-  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_laser_less_flat(nh, "/laser_cloud_less_flat", 1);
-  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_laser_full(nh, "/laser_full", 1);
+  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_laser_sharp(nh,
+  // "/laser_cloud_sharp", 1);
+  // message_filters::Subscriber<sensor_msgs::PointCloud2>
+  // sub_laser_less_sharp(nh, "/laser_cloud_less_sharp", 1);
+  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_laser_flat(nh,
+  // "/laser_cloud_flat", 1);
+  // message_filters::Subscriber<sensor_msgs::PointCloud2>
+  // sub_laser_less_flat(nh, "/laser_cloud_less_flat", 1);
+  // message_filters::Subscriber<sensor_msgs::PointCloud2> sub_laser_full(nh,
+  // "/laser_full", 1);
 
   // for submap manager
-  pubLaserCloudCornerLast = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_corner_last", 10);
-  pubLaserCloudSurfLast = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_surf_last", 10);
-  pubLaserCloudFullRes = nh.advertise<sensor_msgs::PointCloud2>("laser_full_3", 10);
+  pubLaserCloudCornerLast =
+    nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_corner_last", 10);
+  pubLaserCloudSurfLast =
+    nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_surf_last", 10);
+  pubLaserCloudFullRes =
+    nh.advertise<sensor_msgs::PointCloud2>("laser_full_3", 10);
   pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("laser_odom_to_init", 10);
 
   pubLaserPath = nh.advertise<nav_msgs::Path>("laser_odom_path", 10);
@@ -179,33 +200,35 @@ int main(int argc, char ** argv)
 
   // subscribe topics from feature extractor
 
-  ros::Subscriber subImageRaw = nh.subscribe<sensor_msgs::Image>("feature_image", 10, imageHandler);
+  ros::Subscriber subImageRaw =
+    nh.subscribe<sensor_msgs::Image>("feature_image", 10, imageHandler);
   ros::Subscriber subFeaturePoints = nh.subscribe<sensor_msgs::PointCloud2>(
-    "feature_points", 10,
-    featurePointsHandler);
+    "feature_points", 10, featurePointsHandler);
   // subscribe topics from scan registrator
   ros::Subscriber subCornerPointsSharp = nh.subscribe<sensor_msgs::PointCloud2>(
-    "laser_cloud_sharp",
-    10,
-    laserCloudSharpHandler);
-  ros::Subscriber subCornerPointsLessSharp = nh.subscribe<sensor_msgs::PointCloud2>(
-    "laser_cloud_less_sharp", 10, laserCloudLessSharpHandler);
+    "laser_cloud_sharp", 10, laserCloudSharpHandler);
+  ros::Subscriber subCornerPointsLessSharp =
+    nh.subscribe<sensor_msgs::PointCloud2>(
+    "laser_cloud_less_sharp", 10,
+    laserCloudLessSharpHandler);
   ros::Subscriber subSurfPointsFlat = nh.subscribe<sensor_msgs::PointCloud2>(
-    "laser_cloud_flat", 10,
-    laserCloudFlatHandler);
-  ros::Subscriber subSurfPointsLessFlat = nh.subscribe<sensor_msgs::PointCloud2>(
-    "laser_cloud_less_flat", 10, laserCloudLessFlatHandler);
+    "laser_cloud_flat", 10, laserCloudFlatHandler);
+  ros::Subscriber subSurfPointsLessFlat =
+    nh.subscribe<sensor_msgs::PointCloud2>(
+    "laser_cloud_less_flat", 10,
+    laserCloudLessFlatHandler);
   ros::Subscriber subLaserCloudFullRes = nh.subscribe<sensor_msgs::PointCloud2>(
-    "laser_full", 10,
-    laserCloudFullResHandler);
-
+    "laser_full", 10, laserCloudFullResHandler);
+  ros::Subscriber subPoseStamped =
+    nh.subscribe<geometry_msgs::PoseStamped>("pose", 10, poseStampedHandler);
 
   ros::Subscriber subNewSessionSignal = nh.subscribe<std_msgs::Empty>(
-    "/start_new_session", 10,
-    newSessionSignalHandler);
+    "/start_new_session", 10, newSessionSignalHandler);
   // synchronizer
 
-  if (DEBUG) {ROS_WARN_STREAM("Ready to loop");}
+  if (DEBUG) {
+    ROS_WARN_STREAM("Ready to loop");
+  }
 
   ros::Rate loop_rate(100);
   while (ros::ok()) {

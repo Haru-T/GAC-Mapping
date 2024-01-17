@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.8)
 project(gacm)
 
 # set(CMAKE_BUILD_TYPE debug)
@@ -18,6 +18,9 @@ find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
+find_package(Eigen3 REQUIRED)
+find_package(Ceres REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
         tf
@@ -63,15 +66,55 @@ link_directories(
         ${OpenCV_LIBRARY_DIRS}
 )
 
-add_executable(featureTrackingNode src/featureTrackingNode.cpp src/parameters.cpp)
-add_dependencies(featureTrackingNode ${catkin_EXPORTED_TARGETS} cloud_msgs_gencpp)
-target_link_libraries(featureTrackingNode ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} )
+add_library(gacm
+  src/mapping/sub_map.cpp
+  src/parameters.cpp
+  src/poseEstimator.cpp
+  src/util/iputil.cpp
+  src/util/ip_basic.cpp)
+target_link_libraries(gacm
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRAIRES}
+  Eigen3::Eigen
+  Ceres::ceres)
 
-add_executable(plOdometryNode src/plOdometryNode.cpp src/parameters.cpp)
-add_dependencies(plOdometryNode ${catkin_EXPORTED_TARGETS} cloud_msgs_gencpp)
-target_link_libraries(plOdometryNode ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Sophus_LIBRARIES})
+add_executable(featureTrackingNode
+  src/featureTrackingNode.cpp
+  src/featureExtractor.cpp
+  src/scanRegistrator.cpp
+  src/poseEstimator.cpp
+  src/mapping/sub_map.cpp
+  src/parameters.cpp)
+add_dependencies(featureTrackingNode
+  ${catkin_EXPORTED_TARGETS})
+target_link_libraries(featureTrackingNode
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  Eigen3::Eigen
+  gacm)
 
-add_executable(submapManagerNode src/submapManagerNode.cpp src/parameters.cpp)
-add_dependencies(submapManagerNode ${catkin_EXPORTED_TARGETS} cloud_msgs_gencpp)
-target_link_libraries(submapManagerNode ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Sophus_LIBRARIES})
+add_executable(plOdometryNode src/plOdometryNode.cpp)
+add_dependencies(plOdometryNode
+  ${catkin_EXPORTED_TARGETS})
+target_link_libraries(plOdometryNode
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${Sophus_LIBRARIES}
+  Eigen3::Eigen
+  Ceres::ceres
+  gacm)
 
+add_executable(submapManagerNode src/submapManagerNode.cpp)
+add_dependencies(submapManagerNode
+  ${catkin_EXPORTED_TARGETS})
+target_link_libraries(submapManagerNode
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${Sophus_LIBRARIES}
+  Eigen3::Eigen
+  Ceres::ceres
+  gacm)

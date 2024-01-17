@@ -1,43 +1,49 @@
 /**
-* This file is part of GAC-Mapping.
-*
-* Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen University
-*
-* For more information see <https://github.com/SYSU-RoboticsLab/GAC-Mapping>
-*
-* GAC-Mapping is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the license, or
-* (at your option) any later version.
-*
-* GAC-Mapping is distributed to support research and development of
-* Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-* PURPOSE. In no event will the authors be held liable for any damages
-* arising from the use of this software. See the GNU General Public
-* License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with GAC-Mapping. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of GAC-Mapping.
+ *
+ * Copyright (C) 2020-2022 JinHao He, Yilin Zhu / RAPID Lab, Sun Yat-Sen
+ * University
+ *
+ * For more information see <https://github.com/SYSU-RoboticsLab/GAC-Mapping>
+ *
+ * GAC-Mapping is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the license, or
+ * (at your option) any later version.
+ *
+ * GAC-Mapping is distributed to support research and development of
+ * Ground-Aerial heterogeneous multi-agent system, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. In no event will the authors be held liable for any
+ * damages arising from the use of this software. See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with GAC-Mapping. If not, see <http://www.gnu.org/licenses/>.
+ */
 
+#include <functional>
 #include <memory>
 
-#include <message_filters/sync_policies/approximate_time.h>
-#include <message_filters/synchronizer.h>
-// #include <message_filters/time_synchronizer.h>
-#include <message_filters/subscriber.h>
-#include <std_msgs/Empty.h>
+#include <opencv2/core/mat.hpp>
 
+#include "cv_bridge/cv_bridge.h"
+#include "message_filters/subscriber.h"
+#include "message_filters/sync_policies/approximate_time.h"
+#include "message_filters/synchronizer.h"
+#include "pcl_conversions/pcl_conversions.h"
+#include "ros/ros.h"
+#include "sensor_msgs/Image.h"
+#include "sensor_msgs/PointCloud2.h"
+#include "std_msgs/Empty.h"
 
-#include "featureDefinition.h"
-#include "featureExtractor.h"
-#include "scanRegistrator.h"
-
+#include "gacm/featureDefinition.h"
+#include "gacm/featureExtractor.h"
+#include "gacm/scanRegistrator.h"
 
 std::shared_ptr<FeatureTracker> feature_tracker;
 std::shared_ptr<ScanRegistrator> scan_registrator;
-ros::Publisher pub_image, pub_keypoints;//, pub_keylines;
+ros::Publisher pub_image, pub_keypoints; //, pub_keylines;
 ros::Publisher pub_feature_image;
 
 ros::Publisher pubFullResPoints;
@@ -51,7 +57,7 @@ ros::NodeHandle * nhp_ptr;
 // cv::
 void imageDataCallback(const sensor_msgs::Image::ConstPtr & image_msg)
 {
-// void imageDataCallback(const sensor_msgs::Image::ConstPtr& image_msg) {
+  // void imageDataCallback(const sensor_msgs::Image::ConstPtr& image_msg) {
 
   // double time_image = image_msg->header.stamp.toSec();
 
@@ -62,7 +68,8 @@ void imageDataCallback(const sensor_msgs::Image::ConstPtr & image_msg)
   if (feature_tracker->getPointToPub()->size() > 10) {
     pcl::toROSMsg(*feature_tracker->getPointToPub(), keypoints);
   }
-  keypoints.header.stamp = ros::Time().fromSec(feature_tracker->getTimeStampLast());
+  keypoints.header.stamp =
+    ros::Time().fromSec(feature_tracker->getTimeStampLast());
   pub_keypoints.publish(keypoints);
 
   cv::Mat feature_image(feature_tracker->getImageLast());
@@ -71,13 +78,14 @@ void imageDataCallback(const sensor_msgs::Image::ConstPtr & image_msg)
   bridge.image = feature_image;
   bridge.encoding = "bgr8";
   sensor_msgs::Image::Ptr feature_image_ptr = bridge.toImageMsg();
-  feature_image_ptr->header.stamp = ros::Time().fromSec(feature_tracker->getTimeStampLast());
+  feature_image_ptr->header.stamp =
+    ros::Time().fromSec(feature_tracker->getTimeStampLast());
   pub_image.publish(feature_image_ptr);
   bridge.image = feature_image_text;
   feature_image_ptr = bridge.toImageMsg();
-  feature_image_ptr->header.stamp = ros::Time().fromSec(feature_tracker->getTimeStampLast());
+  feature_image_ptr->header.stamp =
+    ros::Time().fromSec(feature_tracker->getTimeStampLast());
   pub_feature_image.publish(feature_image_ptr);
-
 }
 
 void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr & laser_msg)
@@ -91,36 +99,47 @@ void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr & laser_msg)
 
   if (pubFullResPoints.getNumSubscribers() != 0) {
     pcl::toROSMsg(*(scan_registrator->getFullResCloud()), laserCloudOutMsg);
-    laserCloudOutMsg.header.stamp = ros::Time().fromSec(scan_registrator->getStamp());
-    laserCloudOutMsg.header.frame_id = "/camera";
+    laserCloudOutMsg.header.stamp =
+      ros::Time().fromSec(scan_registrator->getStamp());
+    laserCloudOutMsg.header.frame_id = "camera";
     pubFullResPoints.publish(laserCloudOutMsg);
   }
 
   if (pubCornerPointsSharp.getNumSubscribers() != 0) {
-    pcl::toROSMsg(*(scan_registrator->getCornerPointsSharp()), laserCloudOutMsg);
-    laserCloudOutMsg.header.stamp = ros::Time().fromSec(scan_registrator->getStamp());
-    laserCloudOutMsg.header.frame_id = "/camera";
+    pcl::toROSMsg(
+      *(scan_registrator->getCornerPointsSharp()),
+      laserCloudOutMsg);
+    laserCloudOutMsg.header.stamp =
+      ros::Time().fromSec(scan_registrator->getStamp());
+    laserCloudOutMsg.header.frame_id = "camera";
     pubCornerPointsSharp.publish(laserCloudOutMsg);
   }
 
   if (pubCornerPointsLessSharp.getNumSubscribers() != 0) {
-    pcl::toROSMsg(*(scan_registrator->getCornerPointsLessSharp()), laserCloudOutMsg);
-    laserCloudOutMsg.header.stamp = ros::Time().fromSec(scan_registrator->getStamp());
-    laserCloudOutMsg.header.frame_id = "/camera";
+    pcl::toROSMsg(
+      *(scan_registrator->getCornerPointsLessSharp()),
+      laserCloudOutMsg);
+    laserCloudOutMsg.header.stamp =
+      ros::Time().fromSec(scan_registrator->getStamp());
+    laserCloudOutMsg.header.frame_id = "camera";
     pubCornerPointsLessSharp.publish(laserCloudOutMsg);
   }
 
   if (pubSurfPointsFlat.getNumSubscribers() != 0) {
     pcl::toROSMsg(*(scan_registrator->getSurfPointsFlat()), laserCloudOutMsg);
-    laserCloudOutMsg.header.stamp = ros::Time().fromSec(scan_registrator->getStamp());
-    laserCloudOutMsg.header.frame_id = "/camera";
+    laserCloudOutMsg.header.stamp =
+      ros::Time().fromSec(scan_registrator->getStamp());
+    laserCloudOutMsg.header.frame_id = "camera";
     pubSurfPointsFlat.publish(laserCloudOutMsg);
   }
 
   if (pubSurfPointsLessFlat.getNumSubscribers() != 0) {
-    pcl::toROSMsg(*(scan_registrator->getSurfPointsLessFlat()), laserCloudOutMsg);
-    laserCloudOutMsg.header.stamp = ros::Time().fromSec(scan_registrator->getStamp());
-    laserCloudOutMsg.header.frame_id = "/camera";
+    pcl::toROSMsg(
+      *(scan_registrator->getSurfPointsLessFlat()),
+      laserCloudOutMsg);
+    laserCloudOutMsg.header.stamp =
+      ros::Time().fromSec(scan_registrator->getStamp());
+    laserCloudOutMsg.header.frame_id = "camera";
     pubSurfPointsLessFlat.publish(laserCloudOutMsg);
   }
 }
@@ -131,11 +150,11 @@ void imagePointCloudCb(
 {
   // double time_image = image_msg->header.stamp.toSec();
   // double time_laser = laser_msg->header.stamp.toSec();
-  // ROS_INFO_STREAM("Message Receive: " << time_image << "&&" << time_laser <<'\n');
+  // ROS_INFO_STREAM("Message Receive: " << time_image << "&&" << time_laser
+  // <<'\n');
 
   imageDataCallback(image_msg);
   pointCloudCallback(laser_msg);
-
 }
 
 void newSessionSignalHandler(const std_msgs::EmptyConstPtr & empty)
@@ -161,42 +180,55 @@ int main(int argc, char ** argv)
   feature_tracker = std::shared_ptr<FeatureTracker>(new FeatureTracker());
   scan_registrator = std::shared_ptr<ScanRegistrator>(new ScanRegistrator());
   // Subscribers
-  // ros::Subscriber sub_image = nh.subscribe<sensor_msgs::Image>("/image_raw",10, imageDataCallback);
-  // ros::Subscriber sub_pointcloud = nh.subscribe<sensor_msgs::PointCloud2>("/velodyne_points", 10, pointCloudCallback);
-  // message_filters::Subscriber<sensor_msgs::Image> sub_image(nh, "/image_raw", 1);
-  message_filters::Subscriber<sensor_msgs::Image> sub_image(nh, "/image_raw", 1);
-  message_filters::Subscriber<sensor_msgs::PointCloud2> sub_pointcloud(nh, "/velodyne_points", 1);
+  // ros::Subscriber sub_image =
+  // nh.subscribe<sensor_msgs::Image>("/image_raw",10, imageDataCallback);
+  // ros::Subscriber sub_pointcloud =
+  // nh.subscribe<sensor_msgs::PointCloud2>("/velodyne_points", 10,
+  // pointCloudCallback); message_filters::Subscriber<sensor_msgs::Image>
+  // sub_image(nh, "/image_raw", 1);
+  message_filters::Subscriber<sensor_msgs::Image> sub_image(nh, "/image_raw",
+    1);
+  message_filters::Subscriber<sensor_msgs::PointCloud2> sub_pointcloud(
+    nh, "/velodyne_points", 1);
 
   // If strictly synchronized use timestamp to synchronize the topics
-  // message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::PointCloud2> sync(sub_image, sub_pointcloud, 10);
+  // message_filters::TimeSynchronizer<sensor_msgs::Image,
+  // sensor_msgs::PointCloud2> sync(sub_image, sub_pointcloud, 10);
   // sync.registerCallback(boost::bind(&imagePointCloudCb, _1, _2));
 
-
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,
-      sensor_msgs::PointCloud2> MySyncPolicy;
-  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), sub_image, sub_pointcloud);
-  sync.registerCallback(boost::bind(&imagePointCloudCb, _1, _2));
+  typedef message_filters::sync_policies::ApproximateTime<
+      sensor_msgs::Image, sensor_msgs::PointCloud2>
+    MySyncPolicy;
+  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), sub_image,
+    sub_pointcloud);
+  sync.registerCallback(
+    std::bind(
+      &imagePointCloudCb, std::placeholders::_1,
+      std::placeholders::_2));
 
   // Publishers
   pub_image = nh.advertise<sensor_msgs::Image>("feature_image", 10);
-  pub_feature_image = nh.advertise<sensor_msgs::Image>("feature_image_with_text", 10);
+  pub_feature_image =
+    nh.advertise<sensor_msgs::Image>("feature_image_with_text", 10);
   pub_keypoints = nh.advertise<sensor_msgs::PointCloud2>("feature_points", 10);
-  // pub_keylines = nh.advertise<sensor_msgs::PointCloud2> ("/feature_lines",10);
+  // pub_keylines = nh.advertise<sensor_msgs::PointCloud2>
+  // ("/feature_lines",10);
 
   pubFullResPoints = nh.advertise<sensor_msgs::PointCloud2>("laser_full", 1);
-  pubCornerPointsSharp = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_sharp", 1);
-  pubCornerPointsLessSharp = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_less_sharp", 1);
-  pubSurfPointsFlat = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_flat", 1);
-  pubSurfPointsLessFlat = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_less_flat", 1);
-
+  pubCornerPointsSharp =
+    nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_sharp", 1);
+  pubCornerPointsLessSharp =
+    nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_less_sharp", 1);
+  pubSurfPointsFlat =
+    nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_flat", 1);
+  pubSurfPointsLessFlat =
+    nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_less_flat", 1);
 
   feature_tracker->readIntrinsicParameter(CAM_NAME);
   scan_registrator->readIntrinsicParameter(CAM_NAME);
 
   ros::Subscriber subNewSessionSignal = nh.subscribe<std_msgs::Empty>(
-    "/start_new_session", 10,
-    newSessionSignalHandler);
-
+    "/start_new_session", 10, newSessionSignalHandler);
 
   ros::spin();
   return 0;
