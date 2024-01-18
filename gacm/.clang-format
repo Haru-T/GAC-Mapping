@@ -1,0 +1,5 @@
+---
+BasedOnStyle: InheritParentConfig
+IncludeCategories:
+  - Regex: '^"gacm/'
+    Priority: 5

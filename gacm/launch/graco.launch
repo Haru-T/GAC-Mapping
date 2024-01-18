@@ -1,12 +1,12 @@
 <launch>
 
     <!-- debug print -->
-    <param name="/gacm/debug" type="bool" value="false"/>
+    <param name="/gacm/debug" type="bool" value="true"/>
     <!-- true: display in the camera frame; false: in the lidar frame -->
     <param name="/gacm/display_frame_cam" type="bool" value="false"/>
 
-    <arg name="config_path" default = "$(find gacm)/config/graco_ugv.yaml" />  <!-- ground-06 -->
-    <arg name="config_path1" default = "$(find gacm)/config/graco_ugv.yaml" />  <!-- ground-03 -->
+    <arg name="config_path1" default = "$(find gacm)/config/graco_uav_orb.yaml" />  <!-- ground-06 -->
+    <arg name="config_path" default = "$(find gacm)/config/graco_ugv.yaml" />  <!-- ground-03 -->
     <arg name="config_path2" default = "$(find gacm)/config/graco_uav.yaml" />   <!-- aerial-08 -->
     <arg name="config_path3" default = "$(find gacm)/config/graco_ugv.yaml" />
     <arg name="config_path4" default = "$(find gacm)/config/graco_ugv.yaml" />
@@ -27,7 +27,7 @@
         <remap from="/velodyne_points" to="/velodyne/points" />
     </node>
 
-    <node pkg="gacm" type="plOdometryNode"    name="plOdometryNode"    output="screen">
+    <node pkg="gacm" type="plOdometryNode"    name="plOdometryNode"   output="screen">
     	<param name="config_file" type="string" value="$(arg config_path)" />
         <param name="config_file1" type="string" value="$(arg config_path1)"/>
         <param name="config_file2" type="string" value="$(arg config_path2)"/>

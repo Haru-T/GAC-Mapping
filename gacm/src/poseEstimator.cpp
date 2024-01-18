@@ -236,6 +236,7 @@ void PoseEstimator::generateDepthMap()
   bridge.encoding = sensor_msgs::image_encodings::BGR8;
   depth_rgb_ptr = bridge.toImageMsg();
   depth_rgb_ptr->header.stamp =
+    mapDataPerFrameBuf.empty() ? ros::Time().fromSec(timeCornerPointsLessSharp) :
     ros::Time().fromSec(mapDataPerFrameBuf[0].timestamp);
 }
 
@@ -478,35 +479,33 @@ void PoseEstimator::saveHistoryMessage(bool highfreq)
 
 void PoseEstimator::generateOdomMessage(bool highfreq)
 {
-  if (RUN_ODOMETRY) {
-    // ROS_INFO_STREAM("Generating message");
-    if (highfreq) {
-      laserOdometry.header.frame_id = "camera"; // need check
-      laserOdometry.child_frame_id = "laser_odom";
-      laserOdometry.header.stamp = ros::Time().fromSec(timeImageRaw);
-      laserOdometry.pose.pose.orientation.x = q_w_curr_hfreq.x();
-      laserOdometry.pose.pose.orientation.y = q_w_curr_hfreq.y();
-      laserOdometry.pose.pose.orientation.z = q_w_curr_hfreq.z();
-      laserOdometry.pose.pose.orientation.w = q_w_curr_hfreq.w();
-      laserOdometry.pose.pose.position.x = t_w_curr_hfreq.x();
-      laserOdometry.pose.pose.position.y = t_w_curr_hfreq.y();
-      laserOdometry.pose.pose.position.z = t_w_curr_hfreq.z();
-    } else {
-      // generate odometry message and add to path message
-      laserOdometry.header.frame_id = "camera"; // need check
-      laserOdometry.child_frame_id = "laser_odom";
-      laserOdometry.header.stamp = ros::Time().fromSec(timeSurfPointsLessFlat);
-      // ROS_ERROR_STREAM("Generate odom " <<
-      // ros::Time().fromSec(timeSurfPointsLessFlat).toNSec());
-      laserOdometry.pose.pose.orientation.x = q_w_curr.x();
-      laserOdometry.pose.pose.orientation.y = q_w_curr.y();
-      laserOdometry.pose.pose.orientation.z = q_w_curr.z();
-      laserOdometry.pose.pose.orientation.w = q_w_curr.w();
-      laserOdometry.pose.pose.position.x = t_w_curr.x();
-      laserOdometry.pose.pose.position.y = t_w_curr.y();
-      laserOdometry.pose.pose.position.z = t_w_curr.z();
-      // need_pub_odom = true;
-    }
+  // ROS_INFO_STREAM("Generating message");
+  if (highfreq) {
+    laserOdometry.header.frame_id = "camera"; // need check
+    laserOdometry.child_frame_id = "laser_odom";
+    laserOdometry.header.stamp = ros::Time().fromSec(timeImageRaw);
+    laserOdometry.pose.pose.orientation.x = q_w_curr_hfreq.x();
+    laserOdometry.pose.pose.orientation.y = q_w_curr_hfreq.y();
+    laserOdometry.pose.pose.orientation.z = q_w_curr_hfreq.z();
+    laserOdometry.pose.pose.orientation.w = q_w_curr_hfreq.w();
+    laserOdometry.pose.pose.position.x = t_w_curr_hfreq.x();
+    laserOdometry.pose.pose.position.y = t_w_curr_hfreq.y();
+    laserOdometry.pose.pose.position.z = t_w_curr_hfreq.z();
+  } else {
+    // generate odometry message and add to path message
+    laserOdometry.header.frame_id = "camera"; // need check
+    laserOdometry.child_frame_id = "laser_odom";
+    laserOdometry.header.stamp = ros::Time().fromSec(timeSurfPointsLessFlat);
+    // ROS_ERROR_STREAM("Generate odom " <<
+    // ros::Time().fromSec(timeSurfPointsLessFlat).toNSec());
+    laserOdometry.pose.pose.orientation.x = q_w_curr.x();
+    laserOdometry.pose.pose.orientation.y = q_w_curr.y();
+    laserOdometry.pose.pose.orientation.z = q_w_curr.z();
+    laserOdometry.pose.pose.orientation.w = q_w_curr.w();
+    laserOdometry.pose.pose.position.x = t_w_curr.x();
+    laserOdometry.pose.pose.position.y = t_w_curr.y();
+    laserOdometry.pose.pose.position.z = t_w_curr.z();
+    // need_pub_odom = true;
   }
 
   geometry_msgs::PoseStamped laserPose;
@@ -573,7 +572,7 @@ void PoseEstimator::estimatePoseWithImageAndLaser(bool need_update)
   // generate depth image
   generateDepthMap();
   end = clock();
-  ofstream outfile;
+  std::ofstream outfile;
   outfile.open(
     (std::string(std::getenv("HOME")) +
     std::string("/gacm_output/timecost/depth_completion_time.txt"))
@@ -1175,6 +1174,7 @@ void PoseEstimator::handleImage(
 {
   rgb_cur = feature_image.clone();
   imagePointsCur = std::move(keypoints);
+  imagePointsCurNum = imagePointsCur->size();
   cornerPointsSharp = std::move(laser_cloud_sharp);
   cornerPointsLessSharp = std::move(laser_cloud_less_sharp);
   surfPointsFlat = std::move(laser_cloud_flat);

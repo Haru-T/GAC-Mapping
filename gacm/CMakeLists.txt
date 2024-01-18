@@ -11,8 +11,13 @@ MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g  -Wall  -O3 -march=native ")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g -Wall   -O3 -march=native")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g  -Wall -O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g -Wall -O3")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-common -fsanitize=address")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-common -fsanitize=address")
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fsanitize=address")
 
 find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
@@ -69,6 +74,8 @@ link_directories(
 add_library(gacm
   src/mapping/sub_map.cpp
   src/parameters.cpp
+  src/featureExtractor.cpp
+  src/scanRegistrator.cpp
   src/poseEstimator.cpp
   src/util/iputil.cpp
   src/util/ip_basic.cpp)
@@ -79,13 +86,7 @@ target_link_libraries(gacm
   Eigen3::Eigen
   Ceres::ceres)
 
-add_executable(featureTrackingNode
-  src/featureTrackingNode.cpp
-  src/featureExtractor.cpp
-  src/scanRegistrator.cpp
-  src/poseEstimator.cpp
-  src/mapping/sub_map.cpp
-  src/parameters.cpp)
+add_executable(featureTrackingNode src/featureTrackingNode.cpp)
 add_dependencies(featureTrackingNode
   ${catkin_EXPORTED_TARGETS})
 target_link_libraries(featureTrackingNode
@@ -111,6 +112,23 @@ add_executable(submapManagerNode src/submapManagerNode.cpp)
 add_dependencies(submapManagerNode
   ${catkin_EXPORTED_TARGETS})
 target_link_libraries(submapManagerNode
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${Sophus_LIBRARIES}
+  Eigen3::Eigen
+  Ceres::ceres
+  gacm)
+
+add_executable(gacm_uninode
+  src/uninode/main.cpp
+  src/uninode/feature_tracking.cpp
+  src/uninode/odometry.cpp
+  src/uninode/submap_management.cpp
+  src/uninode/file_enumeration.cpp)
+add_dependencies(gacm_uninode
+  ${catkin_EXPORTED_TARGETS})
+target_link_libraries(gacm_uninode
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${OpenCV_LIBRARIES}

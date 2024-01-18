@@ -51,7 +51,7 @@ void generateFalseColors(cv::Mat src, cv::Mat & dst)
 
       // find bin
       int32_t i;
-      for (i = 0; i < 7; i++) {
+      for (i = 0; i < 6; i++) {
         if (val < cumsum[i + 1]) {
           break;
         }

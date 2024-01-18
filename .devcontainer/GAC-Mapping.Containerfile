@@ -20,7 +20,7 @@ RUN apt-get update \
 && apt-get install -y --no-install-recommends \
 ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-tf ros-${ROS_DISTRO}-message-filters ros-${ROS_DISTRO}-image-transport \
 libgoogle-glog-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev libopencv-dev \
-cmake ninja-build ca-certificates curl gzip sudo clangd gdb
+cmake ninja-build python3-catkin-tools ca-certificates curl gzip sudo clangd gdb
 
 RUN --mount=type=bind,from=ceres-builder,source=/ceres-solver,target=/ceres-solver,rw \
     --mount=type=bind,from=ceres-builder,source=/ceres-bin,target=/ceres-bin,rw cd /ceres-bin && ninja install

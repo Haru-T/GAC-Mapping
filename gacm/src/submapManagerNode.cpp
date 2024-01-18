@@ -27,9 +27,9 @@
 #include <dirent.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
-#include <chrono>
 #include <fstream>
 #include <iomanip>
 #include <ios>
@@ -61,6 +61,7 @@
 #include "visualization_msgs/Marker.h"
 
 #include "gacm/ga_posegraph/poseGraphStructure.h"
+#include "gacm/loop_closure/loop_score.hpp"
 #include "gacm/mapping/sub_map.h"
 #include "gacm/parameters.h"
 
@@ -100,29 +101,6 @@ bool updating_map = false;
 
 Eigen::Matrix<float, 100, 100> diff_matrix;
 
-class LoopScore
-{
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  float loop_score;
-  float angle_rel;
-  int robot_id;
-  int submap_id;
-  Eigen::Matrix4f guess;
-  Eigen::Matrix4f try_guess;
-
-  LoopScore(
-    float loop_score_, float angle_rel_, int robot_id_, int submap_id_,
-    const Eigen::Matrix4f & guess_, const Eigen::Matrix4f & try_guess_)
-  : loop_score(loop_score_), angle_rel(angle_rel_), robot_id(robot_id_),
-    submap_id(submap_id_), guess(guess_), try_guess(try_guess_) {}
-};
-bool cmp(const LoopScore & lhs, const LoopScore & rhs)
-{
-  return lhs.loop_score < rhs.loop_score ||
-         (lhs.loop_score == rhs.loop_score && lhs.angle_rel < rhs.angle_rel);
-}
-
 void std2EigenVector(const std::vector<float> & in, Eigen::VectorXf & out)
 {
   out.resize(in.size());
@@ -132,13 +110,6 @@ void std2EigenVector(const std::vector<float> & in, Eigen::VectorXf & out)
 }
 
 std::vector<LoopScore, Eigen::aligned_allocator<LoopScore>> loop_scores;
-
-class ManagerIndex
-{
-public:
-  size_t robot_id;
-  size_t submap_id;
-};
 
 std::vector<MeasurementEdge, Eigen::aligned_allocator<MeasurementEdge>>
 loopEdgeBuf;
@@ -298,7 +269,170 @@ void save_all()
 // 该函数只在main函数开始时进行
 void load_all(
   std::string basepath = std::string(std::getenv("HOME")) +
-  "/gacm_output/data/testSavemap/") {}
+  "/gacm_output/data/testSavemap/")
+{
+  // 只有当前机器人为第一个的时候才会进行询问
+  if (cur_robot_id == 0) {
+    int load = 0;
+    std::cout << "\033[1;36m\nNeed Load old session (\"1\" for yes and \"0\" "
+      "for no)?\n\033[0m";
+    std::cin >> load;
+    if (load != 1) {
+      std::cout << "\033[1;32m\nload all robot done! Ready to receive robot["
+                << cur_robot_id << "] data!\n\033[0m";
+      return;
+    }
+  }
+
+  std::cout << "\033[1;32m\nStart to Load "
+            << basepath + "robot" + std::to_string(cur_robot_id) +
+    "_loop.cfg\n\033[0m";
+  std::fstream fs;
+
+  // 尝试抓取loop文件里的数据，loop文件里存放了因子图中回环部分的数据
+  try {
+    fs.open(
+      basepath + "robot" + std::to_string(cur_robot_id) + "_loop.cfg",
+      std::ios::in);
+    // 文件里机器人的id应该要和当前算法运行时的id一致，否则强制退出
+    int f_robot_id = -100;
+    fs >> f_robot_id;
+    if (cur_robot_id != f_robot_id) {
+      fs.close();
+      throw std::string("wrong robot id!\n");
+    }
+    cur_robot_id = f_robot_id;
+  } catch (std::string & error) {
+    std::cout << "\033[1;34m\nNo file find, return! error is: " << error
+              << "\n\033[0m";
+
+    // 这里的写法按main函数开有那样写，这是为了保证当前机器人初始化正常
+    is_drone[cur_robot_id] = (bool)NEED_CHECK_DIRECTION;
+    MapDatabase[cur_robot_id]
+    .clear();     // 这是必须要，相当于当前机器人所有子图全部清空
+    MapDatabase[cur_robot_id].push_back(
+      std::shared_ptr<SubMap>(new SubMap(*nh_ref)));   // first submap
+    MapDatabase[cur_robot_id][cur_map_id]->initParameters(
+      cur_robot_id, 0, NEED_CHECK_DIRECTION,
+      0);   // double check? // first node
+    kdtree.reset(new pcl::KdTreeFLANN<PointType>());
+    submap_base_map[cur_robot_id].reset(new pcl::PointCloud<PointType>());
+
+    // 如果没有文件且当前机器人编号不为0，说明文件获取完毕，则进行依次优化
+    if (cur_robot_id != 0) {
+      performOptimization();
+      update_submapbase_cloud();
+      globalOptimization();
+      export_odom();
+
+      // 这里还需要初始化这些东西，这时的处理与mapping process里的new
+      // session过程一致
+      cur_map_id = 0;
+      cur_thumbnail_id = 0;
+      cur_loop_test_id = 0; // loop test start from first node
+      need_init_coord = true;
+    }
+
+    std::cout << "\033[1;32m\nload all robot done! Ready to receive robot["
+              << cur_robot_id << "] data!\n\033[0m";
+    return;
+  }
+
+  int is_drone_;
+  fs >> is_drone_;
+  is_drone[cur_robot_id] = is_drone_ == 1 ? true : false;
+  MapDatabase[cur_robot_id].clear();
+  int database_size;
+  fs >> database_size;
+  std::cout << "Loading session " << cur_robot_id << " with " << database_size
+            << " submaps \n";
+  for (int i = 0; i < database_size; i++) {
+    // std::string map_path = ;
+    MapDatabase[cur_robot_id].push_back(
+      std::shared_ptr<SubMap>(
+        new SubMap(
+          basepath, cur_robot_id, i, is_drone[cur_robot_id], *nh_ref)));
+    if (MapDatabase[cur_robot_id][i]->thumbnailGenerated) {
+      netvlad_tf_test::CompactImg img_srv;
+      img_srv.request.req_img_name =
+        MapDatabase[cur_robot_id][i]->thumbnails_db[0].second;
+      int id_tn = MapDatabase[cur_robot_id][i]->thumbnails_db[0].first;
+      if (netvlad_client.call(img_srv)) {
+        if (DEBUG) {
+          ROS_ERROR("Succeed to call service");
+        }
+        // ROS_INFO_STREAM("Descriptor len " <<
+        // ((std::vector<float>)img_srv.response.res_des).size());
+        Eigen::VectorXf desc;
+        std2EigenVector(img_srv.response.res_des, desc);
+        MapDatabase[cur_robot_id][i]->descriptor_db.push_back(
+          std::make_pair(id_tn, desc));
+      } else {
+        ROS_ERROR("Failed to call service");
+      }
+    }
+    if (DEBUG) {
+      std::cout << i + 1 << " of " << database_size << "\n";
+    }
+  }
+  if (DEBUG) {
+    std::cout << "Session loaded\n";
+  }
+  int loop_edges_size;
+  fs >> loop_edges_size;
+  int acc_edge_cnt = 0;
+  int adj_edge_cnt = 0;
+  int rej_edge_cnt = 0;
+  for (int i = 0; i < loop_edges_size; i++) {
+    MeasurementEdge edge;
+    fs >> edge.stamp_from >> edge.stamp_to >> edge.robot_from >>
+    edge.robot_to >> edge.submap_from >> edge.submap_to >>
+    edge.index_from >> edge.index_to >> edge.q.w() >> edge.q.x() >>
+    edge.q.y() >> edge.q.z() >> edge.t.x() >> edge.t.y() >> edge.t.z();
+    loopEdgeBuf.push_back(edge);
+    if (edge.robot_from != edge.robot_to ||
+      edge.submap_from != edge.submap_to + 1)
+    {
+      acc_edge_cnt++;
+    } else {
+      adj_edge_cnt++;
+    }
+  }
+
+  int drop_edges_size;
+  fs >> drop_edges_size;
+  for (int i = 0; i < drop_edges_size; i++) {
+    MeasurementEdge edge;
+    fs >> edge.stamp_from >> edge.stamp_to >> edge.robot_from >>
+    edge.robot_to >> edge.submap_from >> edge.submap_to >>
+    edge.index_from >> edge.index_to >> edge.q.w() >> edge.q.x() >>
+    edge.q.y() >> edge.q.z() >> edge.t.x() >> edge.t.y() >> edge.t.z();
+    dropEdgeBuf.push_back(edge);
+    if (edge.robot_from != edge.robot_to ||
+      edge.submap_from != edge.submap_to + 1)
+    {
+      rej_edge_cnt++;
+    }
+  }
+  fs.close();
+  if (DEBUG) {
+    std::cout << "\nEdges loaded, Edges : " << acc_edge_cnt << ": "
+              << adj_edge_cnt << ": " << rej_edge_cnt << "\n";
+  }
+  publish_opt_posegraph(true);
+
+  CONFIG_ID++;
+  std_msgs::Empty empty;
+  pubNewSessionSignal.publish(empty);
+
+  cur_robot_id++;
+  CONFIG_ID = cur_robot_id;
+  if (DEBUG) {
+    ROS_ERROR_STREAM("test config id " << CONFIG_ID);
+  }
+  readParameters(*nh_ref);
+  load_all(basepath);
+}
 
 void pubLoopImage(cv::Mat & query_tn, cv::Mat & response_tn, bool is_accept)
 {
@@ -816,9 +950,7 @@ void thumbnail_process()
         testBaseScore(all_submap_bases, knn_idx, knn_dist);
 
         // try find possible loop (NDT+GICP)
-        std::sort(
-          loop_scores.begin(), loop_scores.end(),
-          cmp);         // increase order
+        std::sort(loop_scores.begin(), loop_scores.end()); // increase order
         // test best match, once loop found, early stop
         bool find_homo_loop = false;
 
@@ -1020,9 +1152,7 @@ void thumbnail_process()
         testBaseScore(all_submap_bases, knn_idx, knn_dist);
 
         // try find possible loop (NDT+GICP)
-        std::sort(
-          loop_scores.begin(), loop_scores.end(),
-          cmp);         // increase order
+        std::sort(loop_scores.begin(), loop_scores.end()); // increase order
         // test best match, once loop found, early stop
         bool find_hetero_loop = false;
         for (int i = 0; i < 1 && i < loop_scores.size(); i++) {
@@ -2059,7 +2189,7 @@ void globalOptimization()
             if (final_score <
               (is_drone[ri] ?
               (is_drone[ri_test] ? 0.65 : 0.8) :
-              0.65))            // 0.9 // 这里需要更加严格的条件，除了无人机
+              0.65))          // 0.9 // 这里需要更加严格的条件，除了无人机
             // int accept;
             // std::cin >> accept;
             {

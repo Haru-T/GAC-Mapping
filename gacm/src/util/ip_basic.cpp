@@ -8,7 +8,8 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/core/hal/interface.h>
 
-namespace {
+namespace
+{
 const cv::Mat FULL_KERNEL_3 = cv::Mat::ones(3, 3, CV_8U);
 const cv::Mat FULL_KERNEL_5 = cv::Mat::ones(5, 5, CV_8U);
 const cv::Mat FULL_KERNEL_7 = cv::Mat::ones(7, 7, CV_8U);
