@@ -26,12 +26,12 @@
 #define GACM__POSE_ESTIMATOR_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <mutex>
 #include <queue>
 #include <vector>
-#include <cstdint>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -188,16 +188,15 @@ private:
   // transform all lidar points to the start of the next frame
   void TransformToEnd(PointType const * const pi, PointType * const po) const;
 
-public
-  :
+public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   PoseEstimator(
     const std::string &
-    calib_file)             /*:
-                               q_last_curr(Eigen::Map<Eigen::Quaterniond>(NULL)),
-                               t_last_curr(Eigen::Map<Eigen::Vector3d>(NULL)) ,
-                               se3_last_curr(Eigen::Map<Eigen::Matrix<double,6,1>>(NULL))*/
+    calib_file)       /*:
+                         q_last_curr(Eigen::Map<Eigen::Quaterniond>(NULL)),
+                         t_last_curr(Eigen::Map<Eigen::Vector3d>(NULL)) ,
+                         se3_last_curr(Eigen::Map<Eigen::Matrix<double,6,1>>(NULL))*/
   {
     allocateMemory();
     if (DEBUG) {
@@ -336,16 +335,15 @@ public
 
   void handleImage();
   void handleImage(
-    const cv::Mat & feature_image, pcl::PointCloud<ImagePoint>::Ptr keypoints,
+    const cv::Mat & feature_image,
+    pcl::PointCloud<ImagePoint>::Ptr keypoints,
     pcl::PointCloud<PointType>::Ptr laser_cloud_sharp,
     pcl::PointCloud<PointType>::Ptr laser_cloud_less_sharp,
     pcl::PointCloud<PointType>::Ptr laser_cloud_flat,
     pcl::PointCloud<PointType>::Ptr laser_cloud_less_flat,
     pcl::PointCloud<PointType>::Ptr laser_full,
     const Eigen::Vector3d & position,
-    const Eigen::Quaterniond & orientation,
-    int64_t timestamp_ns
-  );
+    const Eigen::Quaterniond & orientation, int64_t timestamp_ns);
 
   const nav_msgs::Odometry & getLaserOdometry() const {return laserOdometry;}
 

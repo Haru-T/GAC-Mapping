@@ -15,18 +15,27 @@ struct OdometryObject : std::enable_shared_from_this<OdometryObject>
   std::shared_ptr<ros::Publisher> pubLaserPath2;
   std::shared_ptr<ros::Publisher> pubPointFeatures;
   std::shared_ptr<ros::Publisher> pubDepthImageRGB;
+  std::shared_ptr<ros::Publisher> pubLaserCloudCornerLast;
+  std::shared_ptr<ros::Publisher> pubLaserCloudSurfLast;
+  std::shared_ptr<ros::Publisher> pubLaserOdometry;
 
   OdometryObject(
     std::shared_ptr<PoseEstimator> pose_estimator,
-    std::shared_ptr<ros::Publisher> pubLaserPath,
-    std::shared_ptr<ros::Publisher> pubLaserPath2,
-    std::shared_ptr<ros::Publisher> pubPointFeatures,
-    std::shared_ptr<ros::Publisher> pubDepthImageRGB)
+    std::shared_ptr<ros::Publisher> pubLaserPath = nullptr,
+    std::shared_ptr<ros::Publisher> pubLaserPath2 = nullptr,
+    std::shared_ptr<ros::Publisher> pubPointFeatures = nullptr,
+    std::shared_ptr<ros::Publisher> pubDepthImageRGB = nullptr,
+    std::shared_ptr<ros::Publisher> pubLaserCloudCornerLast = nullptr,
+    std::shared_ptr<ros::Publisher> pubLaserCloudSurfLast = nullptr,
+    std::shared_ptr<ros::Publisher> pubLaserOdometry = nullptr)
   : pose_estimator(std::move(pose_estimator)),
     pubLaserPath(std::move(pubLaserPath)),
     pubLaserPath2(std::move(pubLaserPath2)),
     pubPointFeatures(std::move(pubPointFeatures)),
-    pubDepthImageRGB(std::move(pubDepthImageRGB)) {}
+    pubDepthImageRGB(std::move(pubDepthImageRGB)),
+    pubLaserCloudCornerLast(std::move(pubLaserCloudCornerLast)),
+    pubLaserCloudSurfLast(std::move(pubLaserCloudSurfLast)),
+    pubLaserOdometry(std::move(pubLaserOdometry)) {}
 
   OdometryOutput odometry(OdometryInput && input);
 };
@@ -34,27 +43,36 @@ struct OdometryObject : std::enable_shared_from_this<OdometryObject>
 std::shared_ptr<OdometryObject>
 spawn_odometry_object(const std::string & calib_file, ros::NodeHandle * nh_ptr)
 {
+  if (nh_ptr == nullptr) {
+
+    return std::make_shared<OdometryObject>(
+      std::make_shared<PoseEstimator>(calib_file));
+  }
   return std::make_shared<OdometryObject>(
     std::make_shared<PoseEstimator>(calib_file),
-    nh_ptr != nullptr ?
     std::make_shared<ros::Publisher>(
-      nh_ptr->advertise<nav_msgs::Path>("laser_odom_path", 10)) :
-    nullptr,
-    nh_ptr != nullptr ?
+      nh_ptr->advertise<nav_msgs::Path>("laser_odom_path", 10)),
     std::make_shared<ros::Publisher>(
-      nh_ptr->advertise<nav_msgs::Path>("laser_odom_path2", 10)) :
-    nullptr,
-    nh_ptr != nullptr ?
+      nh_ptr->advertise<nav_msgs::Path>("laser_odom_path2", 10)),
     std::make_shared<ros::Publisher>(
-      nh_ptr->advertise<sensor_msgs::PointCloud2>("point_3d", 10)) :
-    nullptr,
-    nh_ptr != nullptr ?
+      nh_ptr->advertise<sensor_msgs::PointCloud2>("point_3d", 10)),
     std::make_shared<ros::Publisher>(
-      nh_ptr->advertise<sensor_msgs::Image>("depth_rgb", 10)) :
-    nullptr);
+      nh_ptr->advertise<sensor_msgs::Image>("depth_rgb", 10)),
+    std::make_shared<ros::Publisher>(
+      nh_ptr->advertise<sensor_msgs::PointCloud2>(
+        "laser_cloud_corner_last",
+        10)),
+    std::make_shared<ros::Publisher>(
+      nh_ptr->advertise<sensor_msgs::PointCloud>(
+        "laser_cloud_surf_last",
+        10)),
+    std::make_shared<ros::Publisher>(
+      nh_ptr->advertise<nav_msgs::Odometry>("laser_odom_to_init", 10)));
 }
 
-void new_session(const std::shared_ptr<OdometryObject> & obj, const std::string & calib_file)
+void new_session(
+  const std::shared_ptr<OdometryObject> & obj,
+  const std::string & calib_file)
 {
   obj->pose_estimator = std::make_shared<PoseEstimator>(calib_file);
 }
@@ -84,6 +102,15 @@ OdometryOutput OdometryObject::odometry(OdometryInput && input)
   }
   if (pubDepthImageRGB != nullptr) {
     pubDepthImageRGB->publish(pose_estimator->getDepthImageRGB());
+  }
+  if (pubLaserCloudCornerLast != nullptr) {
+    pubLaserCloudCornerLast->publish(pose_estimator->getLaserCloudCornerLastMsg());
+  }
+  if (pubLaserCloudSurfLast != nullptr) {
+    pubLaserCloudSurfLast->publish(pose_estimator->getLaserCloudSurfLastMsg());
+  }
+  if (pubLaserOdometry != nullptr) {
+    pubLaserOdometry->publish(pose_estimator->getLaserOdometry());
   }
 
   nav_msgs::Odometry odom = pose_estimator->getLaserOdometry();

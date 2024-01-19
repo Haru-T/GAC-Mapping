@@ -114,8 +114,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   const int feature_id;
 
-  std::vector<PointFeaturePerFrame,
-    Eigen::aligned_allocator<PointFeaturePerFrame>>
+  std::vector<PointFeaturePerFrame, Eigen::aligned_allocator<PointFeaturePerFrame>>
   feature_per_frame;
 
   int used_num;

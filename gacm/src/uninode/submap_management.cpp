@@ -62,7 +62,7 @@ struct SubMapManagementObject
   bool updating_pg;
   bool updating_map;
 
-  std::vector<LoopScore, Eigen::aligned_allocator<LoopScore>> loop_scores;
+  std::vector<LoopScore> loop_scores;
   std::vector<MeasurementEdge, Eigen::aligned_allocator<MeasurementEdge>>
   loopEdgeBuf;
   std::vector<MeasurementEdge, Eigen::aligned_allocator<MeasurementEdge>>
@@ -81,6 +81,9 @@ struct SubMapManagementObject
   bool is_first = true;
   int last_loop_size = 0;
 
+  std::thread cache_thread;
+  std::atomic_bool continue_cache_thread;
+
   SubMapManagementObject(ros::NodeHandle & nh)
   : is_drone{static_cast<bool>(NEED_CHECK_DIRECTION)}, nh_ref(&nh),
     pubRelEdge(nh.advertise<visualization_msgs::Marker>(
@@ -89,7 +92,8 @@ struct SubMapManagementObject
     pubDetectL(nh.advertise<sensor_msgs::Image>("/database_thumb", 10)),
     netvlad_client(
       nh.serviceClient<netvlad_tf_test::CompactImg>("/compact_image")),
-    kdtree(new pcl::KdTreeFLANN<PointType>())
+    kdtree(new pcl::KdTreeFLANN<PointType>()),
+    continue_cache_thread{true}
   {
     MapDatabase[0].push_back(std::make_shared<SubMap>(nh));
     MapDatabase[0][0]->initParameters(
@@ -102,9 +106,15 @@ struct SubMapManagementObject
     for (size_t i = 0; i < pubOptimizedMap.size(); ++i) {
       std::stringstream map_topic;
       map_topic << "/optimized_map" << i;
-      pubOptimizedMap[i] = nh.advertise<nav_msgs::Path>(map_topic.str(), 100);
+      pubOptimizedMap[i] = nh.advertise<sensor_msgs::PointCloud2>(map_topic.str(), 100);
     }
     submap_base_map[0].reset(new pcl::PointCloud<PointType>());
+  }
+
+  ~SubMapManagementObject() noexcept
+  {
+    continue_cache_thread = false;
+    if (cache_thread.joinable()) {cache_thread.join();}
   }
 
   void process(SubMapManagementInput && input);
@@ -140,7 +150,7 @@ std::shared_ptr<SubMapManagementObject>
 spawn_submap_management_object(ros::NodeHandle & nh)
 {
   auto p = std::make_shared<SubMapManagementObject>(nh);
-  std::thread(&SubMapManagementObject::cache_process, p.get()).detach();
+  p->cache_thread = std::thread(&SubMapManagementObject::cache_process, p.get());
   return p;
 }
 
@@ -1877,7 +1887,7 @@ void SubMapManagementObject::check_cachable_map()
 void SubMapManagementObject::cache_process()
 {
   unsigned int cnt = 0;
-  while (true) {
+  while (continue_cache_thread) {
     if (cnt % 3 == 0) {
       check_cachable_map();
       publish_opt_map(false);

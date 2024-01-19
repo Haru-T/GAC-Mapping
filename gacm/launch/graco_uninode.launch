@@ -19,9 +19,9 @@
     <param name="config_file4" type="string" value="$(arg config_path4)"/>
     <param name="gacm_folder" type="string" value="$(arg gacm_path)" />
 
-    <rosparam param="left_image_directories">["/workspaces/dataset/graco/euroc_fmt/ground-06/mav0/cam0/data","/workspaces/dataset/graco/euroc_fmt/aerial-07-25m/mav0/cam0/data"]</rosparam>
-    <rosparam param="point_cloud_directories">["/workspaces/dataset/graco/euroc_fmt/ground-06/mav0/point0/data","/workspaces/artifacts/ORB_SLAM3/graco/aerial-07-25m/points"]</rosparam>
-    <rosparam param="odometry_files">["","/workspaces/artifacts/ORB_SLAM3/graco/aerial-07-25m/CameraTrajectory.txt"]</rosparam>
+    <rosparam param="left_image_directories">["/workspaces/dataset/graco/euroc_fmt/ground-06/mav0/cam0/data","/workspaces/dataset/graco/euroc_fmt/aerial-08-25m/mav0/cam0/data"]</rosparam>
+    <rosparam param="point_cloud_directories">["/workspaces/dataset/graco/euroc_fmt/ground-06/mav0/point0/data","/workspaces/artifacts/ORB_SLAM3/graco/aerial-08-25m/points"]</rosparam>
+    <rosparam param="odometry_files">["","/workspaces/artifacts/ORB_SLAM3/graco/aerial-08-25m/CameraTrajectory.txt"]</rosparam>
   </node>
 
   <arg name="rviz" default="true" />
