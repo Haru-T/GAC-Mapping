@@ -11,6 +11,8 @@
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
+#include <pcl/surface/mls.h>
+#include <pcl/search/kdtree.h>
 
 #include "ros/ros.h"
 
@@ -108,6 +110,22 @@ Robot #%zu:
         pcl::PointCloud<gacm::PointType>::Ptr point_cloud(
           new pcl::PointCloud<gacm::PointType>());
         pcl::io::loadPCDFile(*point_cloud_it, *point_cloud);
+        if (!estimate_odometry && point_cloud->points.size() > 10) {
+          pcl::MovingLeastSquares<gacm::PointType, gacm::PointType> mls;
+          mls.setInputCloud(point_cloud);
+          pcl::search::KdTree<gacm::PointType>::Ptr kd_tree(new pcl::search::KdTree<gacm::PointType>);
+          mls.setSearchMethod(kd_tree);
+          mls.setUpsamplingMethod(pcl::MovingLeastSquares<gacm::PointType, gacm::PointType>::UpsamplingMethod::VOXEL_GRID_DILATION);
+          mls.setPolynomialOrder(2);
+          mls.setSearchRadius(1.0);
+          mls.setComputeNormals(true);
+          mls.setDilationVoxelSize(0.75);
+          mls.setDilationIterations(1);
+          mls.setNumberOfThreads(12);
+          pcl::PointCloud<gacm::PointType>::Ptr point_cloud_upsampled(new pcl::PointCloud<gacm::PointType>());
+          mls.process(*point_cloud_upsampled);
+          point_cloud = std::move(point_cloud_upsampled);
+        }
         ROS_INFO("timestamp=%" PRId64, left_image_timestamp);
         gacm::FeatureTrackingInput feature_tracking_input{
           .image = cv::imread(*left_image_it, cv::IMREAD_COLOR),
