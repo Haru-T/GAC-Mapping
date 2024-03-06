@@ -1,6 +1,6 @@
 <launch>
   <!-- debug print -->
-  <param name="/gacm/debug" type="bool" value="true"/>
+  <param name="/gacm/debug" type="bool" value="false"/>
   <!-- true: display in the camera frame; false: in the lidar frame -->
   <param name="/gacm/display_frame_cam" type="bool" value="false"/>
 
@@ -19,9 +19,24 @@
     <param name="config_file4" type="string" value="$(arg config_path4)"/>
     <param name="gacm_folder" type="string" value="$(arg gacm_path)" />
 
+    <!--
     <rosparam param="left_image_directories">["/workspaces/dataset/graco/euroc_fmt/ground-06/mav0/cam0/data","/workspaces/dataset/graco/euroc_fmt/aerial-08-25m/mav0/cam0/data"]</rosparam>
     <rosparam param="point_cloud_directories">["/workspaces/dataset/graco/euroc_fmt/ground-06/mav0/point0/data","/workspaces/artifacts/ORB_SLAM3/graco/aerial-08-25m/points"]</rosparam>
     <rosparam param="odometry_files">["","/workspaces/artifacts/ORB_SLAM3/graco/aerial-08-25m/CameraTrajectory.txt"]</rosparam>
+    -->
+    <rosparam param="left_image_directories">["/workspaces/dataset/graco/euroc_fmt/ground-03/mav0/cam0/data","/workspaces/dataset/graco/euroc_fmt/aerial-03-20m/mav0/cam0/data"]</rosparam>
+    <rosparam param="point_cloud_directories">["/workspaces/dataset/graco/euroc_fmt/ground-03/mav0/point0/data","/workspaces/artifacts/ORB_SLAM3/graco/aerial-03-20m/points"]</rosparam>
+    <rosparam param="odometry_files">["","/workspaces/artifacts/ORB_SLAM3/graco/aerial-03-20m/CameraTrajectory.txt"]</rosparam>
+    <!--
+    <rosparam param="left_image_directories">["/workspaces/dataset/graco/euroc_fmt/ground-04/mav0/cam0/data","/workspaces/dataset/graco/euroc_fmt/aerial-01-40m/mav0/cam0/data"]</rosparam>
+    <rosparam param="point_cloud_directories">["/workspaces/dataset/graco/euroc_fmt/ground-04/mav0/point0/data","/workspaces/artifacts/ORB_SLAM3/graco/aerial-01-40m/points"]</rosparam>
+    <rosparam param="odometry_files">["","/workspaces/artifacts/ORB_SLAM3/graco/aerial-01-40m/CameraTrajectory.txt"]</rosparam>
+    -->
+    <!--
+    <rosparam param="left_image_directories">["/workspaces/dataset/graco/euroc_fmt/ground-01/mav0/cam0/data","/workspaces/dataset/graco/euroc_fmt/aerial-05-40m/mav0/cam0/data"]</rosparam>
+    <rosparam param="point_cloud_directories">["/workspaces/dataset/graco/euroc_fmt/ground-01/mav0/point0/data","/workspaces/artifacts/ORB_SLAM3/graco/aerial-05-40m/points"]</rosparam>
+    <rosparam param="odometry_files">["","/workspaces/artifacts/ORB_SLAM3/graco/aerial-05-40m/CameraTrajectory.txt"]</rosparam>
+    -->
   </node>
 
   <arg name="rviz" default="true" />
