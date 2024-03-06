@@ -1080,7 +1080,7 @@ void SubMapManagementObject::thumbnail_process()
         ROS_INFO_STREAM("start adjacent test");
       }
       // for adjacent submap
-      if (cur_loop_test_id > 1) {
+      if (RUN_ODOMETRY && cur_loop_test_id > 1) {
         clock_t start_icp, end_icp;
         start_icp = clock();
 

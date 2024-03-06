@@ -58,6 +58,9 @@ angle_bottom: 15.1
 crop_near: 1.0
 crop_far: 80
 
+odometry_method: gacm
+frame: laser
+
 edge_threshold: 2
 surf_threshold: 1.5  # for uav, to get more points, this should set larger (which will improve ndt+icp accuracy)
 nearest_feature_search_dist: 25
@@ -83,10 +86,10 @@ need_check_direction: 1 # On a drone, if your equipment (default is camera) Z ax
 
 # output odom para, tum format
 need_pub_odom: 1
-out_odom_path: /home/sysu-rapid/gacm_output/data/testSavemap/   # must end with "/"
+out_odom_path: /home/dev/gacm_output/data/testSavemap/   # must end with "/"
 
 # for memory save
-cache_path: /home/sysu-rapid/gacm_output/cache/     # must end with "/"
+cache_path: /home/dev/gacm_output/cache/     # must end with "/"
 
 # no use / deprecate
 gt_path: deprecate

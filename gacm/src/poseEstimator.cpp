@@ -1021,17 +1021,19 @@ void PoseEstimator::estimatePoseWithImageAndLaser(bool need_update)
 
   updatePointFeatureMap();
 
-  start = clock();
+  if (!RUN_ODOMETRY) {
+    start = clock();
 
-  optimizeMap(lidar_only);
+    optimizeMap(lidar_only);
 
-  end = clock();
-  outfile.open(
-    (home_dir + std::string("/gacm_output/timecost/landmark_time.txt"))
-    .c_str(),
-    ios::app);
-  outfile << (double)(end - start) / CLOCKS_PER_SEC << "\n";
-  outfile.close();
+    end = clock();
+    outfile.open(
+      (home_dir + std::string("/gacm_output/timecost/landmark_time.txt"))
+      .c_str(),
+      ios::app);
+    outfile << (double)(end - start) / CLOCKS_PER_SEC << "\n";
+    outfile.close();
+  }
 
   q_w_curr_hfreq = q_w_curr;
   t_w_curr_hfreq = t_w_curr;

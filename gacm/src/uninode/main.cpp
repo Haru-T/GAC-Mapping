@@ -119,6 +119,25 @@ Robot #%zu:
           std::move(feature_tracking_input),
           feature_tracking);
 
+        Eigen::Vector3d position(0.0, 0.0, 0.0);
+        Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
+        if (!estimate_odometry) {
+          Eigen::Transform<double, 3, Eigen::TransformTraits::Isometry> Twb;
+          Twb.linear() = odometry_it->pose.orientation.toRotationMatrix();
+          Twb.translation() = odometry_it->pose.position;
+
+          // TODO load this from the configuration file
+          Eigen::Transform<double, 3, Eigen::TransformTraits::Isometry> Tbc;
+          Tbc.matrix() << -0.99995218, -0.00522539, -0.00826584,  0.21743355,
+                          -0.00827815,  0.00233898,  0.999963  ,  0.04673507,
+                          -0.00520586,  0.99998361, -0.00238212, -0.01191991,
+                           0.        ,  0.        ,  0.        ,  1.;
+          Eigen::Transform<double, 3, Eigen::TransformTraits::Isometry> Twc
+            = Twb * Tbc;
+          position = Twc.translation();
+          orientation = Twc.rotation();
+        }
+
         gacm::OdometryInput odometry_input{
           .feature_image = std::move(feature_tracking_output.feature_image),
           .keypoints = std::move(feature_tracking_output.feature_points),
@@ -133,11 +152,8 @@ Robot #%zu:
           .laser_full = std::move(feature_tracking_output.laser_full),
           .pose =
           {
-            .position = estimate_odometry ? Eigen::Vector3d() :
-              odometry_it->pose.position,
-            .orientation = estimate_odometry ?
-              Eigen::Quaterniond() :
-              odometry_it->pose.orientation,
+            .position = position,
+            .orientation = orientation,
           },
           .timestamp_nanoseconds = left_image_timestamp,
         };
@@ -153,7 +169,7 @@ Robot #%zu:
           .laser_odom_to_init =
           {
             .position =
-              std::move(odometry_output.laser_odom_to_init.position),
+              odometry_output.laser_odom_to_init.position,
             .orientation =
               odometry_output.laser_odom_to_init.orientation,
           },
@@ -191,6 +207,7 @@ Robot #%zu:
     gacm::new_session(odometry, CAM_NAME);
     gacm::new_session(submap_management);
   }
+  ROS_INFO("All sequences finished");
   ros::shutdown();
   return 0;
 }

@@ -1523,7 +1523,7 @@ void thumbnail_process()
 
         empty_loop++;
         // empty loop, no further operation, should start a new session
-        if (empty_loop >= 100000 && !lastnode_created) {
+        if (empty_loop >= 10000 && !lastnode_created) {
           if (DEBUG) {
             ROS_ERROR_STREAM(
               "LAST "

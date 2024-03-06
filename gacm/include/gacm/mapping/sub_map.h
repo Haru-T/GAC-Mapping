@@ -268,8 +268,6 @@ public:
     q = pose_graph_local[fid].q * q_world_base;
     t = t_world_base + q_world_base * pose_graph_local[fid].t;
   }
-
-  void generateThumbnailForFrame(int fid);
 };
 
 #endif  // GACM__MAPPING__SUB_MAP_H_
